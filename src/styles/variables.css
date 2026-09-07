@@ -1,0 +1,65 @@
+:root {
+  /* Core Colors */
+  --bg-base: #0B0B13;
+  --bg-panel: rgba(25, 26, 36, 0.5);
+  --bg-panel-elevated: rgba(35, 37, 50, 0.7);
+  --bg-panel-hover: rgba(255, 255, 255, 0.05);
+  --bg-glass: rgba(11, 11, 19, 0.85);
+  
+  /* Accents */
+  --accent-primary: #D14FFF;
+  --accent-secondary: #2B9BFF;
+  --accent-gradient: linear-gradient(135deg, #FF33A6 0%, #B833FF 50%, #4433FF 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #FF66BE 0%, #D166FF 50%, #7766FF 100%);
+  --accent-glow: rgba(209, 79, 255, 0.4);
+
+  /* Typography */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+
+  /* Spacing System (8pt Grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(138, 79, 255, 0.6);
+
+  /* Shadows - Deep and Cinematic */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-lg: 0 16px 40px rgba(0,0,0,0.7);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-neon: 0 0 20px rgba(138, 79, 255, 0.4);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Motion Principles (Easing) */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  
+  --transition-fast: 150ms var(--ease-out);
+  --transition-normal: 300ms var(--ease-out);
+  --transition-slow: 500ms var(--ease-out);
+
+  /* Heights */
+  --topbar-height: 80px;
+  --player-height: 104px;
+  --mobile-nav-height: 72px;
+  --sidebar-width: 280px;
+}
+

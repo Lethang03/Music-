@@ -1,0 +1,164 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.15.1
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:E:\Music GG\.npmrc
+5 silly config load:file:C:\Users\LEGION\.npmrc
+6 silly config load:file:C:\Users\LEGION\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install
+8 verbose argv "install" "--cache" ".npm-cache" "--no-audit" "--no-fund"
+9 verbose logfile logs-max:10 dir:E:\Music GG\.npm-cache\_logs\2026-09-07T16_17_10_348Z-
+10 verbose logfile E:\Music GG\.npm-cache\_logs\2026-09-07T16_17_10_348Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+15 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with EACCES
+16 silly reify moves {}
+17 verbose reify failed optional dependency E:\Music GG\node_modules\fsevents
+18 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\fsevents' ]
+19 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-win32-ia32-msvc
+20 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-win32-ia32-msvc' ]
+21 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-win32-arm64-msvc
+22 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-win32-arm64-msvc' ]
+23 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-openharmony-arm64
+24 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-openharmony-arm64' ]
+25 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-openbsd-x64
+26 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-openbsd-x64' ]
+27 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-x64-musl
+28 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-x64-musl' ]
+29 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-x64-gnu
+30 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-x64-gnu' ]
+31 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-s390x-gnu
+32 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-s390x-gnu' ]
+33 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-riscv64-musl
+34 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-riscv64-musl' ]
+35 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-riscv64-gnu
+36 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-riscv64-gnu' ]
+37 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-ppc64-musl
+38 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-ppc64-musl' ]
+39 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-ppc64-gnu
+40 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-ppc64-gnu' ]
+41 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-loong64-musl
+42 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-loong64-musl' ]
+43 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-loong64-gnu
+44 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-loong64-gnu' ]
+45 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-arm64-musl
+46 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-arm64-musl' ]
+47 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-arm64-gnu
+48 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-arm64-gnu' ]
+49 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-arm-musleabihf
+50 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-arm-musleabihf' ]
+51 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-linux-arm-gnueabihf
+52 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-linux-arm-gnueabihf' ]
+53 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-freebsd-x64
+54 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-freebsd-x64' ]
+55 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-freebsd-arm64
+56 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-freebsd-arm64' ]
+57 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-darwin-x64
+58 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-darwin-x64' ]
+59 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-darwin-arm64
+60 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-darwin-arm64' ]
+61 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-android-arm64
+62 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-android-arm64' ]
+63 verbose reify failed optional dependency E:\Music GG\node_modules\@rollup\rollup-android-arm-eabi
+64 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@rollup\\rollup-android-arm-eabi' ]
+65 verbose reify failed optional dependency E:\Music GG\node_modules\@napi-rs\lzma-linux-x64-gnu
+66 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@napi-rs\\lzma-linux-x64-gnu' ]
+67 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\win32-ia32
+68 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\win32-ia32' ]
+69 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\win32-arm64
+70 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\win32-arm64' ]
+71 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\sunos-x64
+72 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\sunos-x64' ]
+73 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\openbsd-x64
+74 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\openbsd-x64' ]
+75 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\netbsd-x64
+76 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\netbsd-x64' ]
+77 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\linux-x64
+78 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\linux-x64' ]
+79 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\linux-s390x
+80 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\linux-s390x' ]
+81 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\linux-riscv64
+82 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\linux-riscv64' ]
+83 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\linux-ppc64
+84 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\linux-ppc64' ]
+85 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\linux-mips64el
+86 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\linux-mips64el' ]
+87 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\linux-loong64
+88 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\linux-loong64' ]
+89 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\linux-ia32
+90 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\linux-ia32' ]
+91 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\linux-arm64
+92 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\linux-arm64' ]
+93 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\linux-arm
+94 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\linux-arm' ]
+95 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\freebsd-x64
+96 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\freebsd-x64' ]
+97 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\freebsd-arm64
+98 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\freebsd-arm64' ]
+99 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\darwin-x64
+100 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\darwin-x64' ]
+101 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\darwin-arm64
+102 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\darwin-arm64' ]
+103 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\android-x64
+104 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\android-x64' ]
+105 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\android-arm64
+106 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\android-arm64' ]
+107 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\android-arm
+108 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\android-arm' ]
+109 verbose reify failed optional dependency E:\Music GG\node_modules\@esbuild\aix-ppc64
+110 silly reify mark deleted [ 'E:\\Music GG\\node_modules\\@esbuild\\aix-ppc64' ]
+111 silly ADD
+112 silly ADD
+113 silly ADD
+114 silly ADD
+115 silly ADD
+116 silly ADD
+117 silly ADD
+118 silly ADD
+119 silly ADD
+120 silly ADD
+121 silly ADD
+122 silly ADD
+123 silly ADD
+124 silly ADD
+125 silly ADD
+126 silly ADD
+127 silly ADD
+128 silly ADD
+129 silly ADD
+130 silly ADD
+131 silly ADD
+132 silly ADD
+133 silly ADD
+134 silly ADD
+135 silly ADD
+136 silly ADD
+137 silly ADD
+138 silly ADD
+139 silly ADD
+140 silly ADD
+141 silly ADD
+142 silly ADD
+143 silly ADD
+144 silly ADD
+145 silly ADD
+146 silly ADD
+147 silly ADD
+148 silly ADD
+149 silly ADD
+150 silly ADD
+151 silly ADD
+152 silly ADD
+153 silly ADD
+154 silly ADD
+155 silly ADD
+156 silly ADD
+157 silly ADD
+158 verbose cwd E:\Music GG
+159 verbose os Windows_NT 10.0.26200
+160 verbose node v22.15.1
+161 verbose npm  v10.9.2
+162 verbose exit 0
+163 info ok

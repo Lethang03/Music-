@@ -51,10 +51,13 @@
   /* Motion Principles (Easing) */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-cinematic: cubic-bezier(0.25, 1, 0.5, 1);
   
   --transition-fast: 150ms var(--ease-out);
   --transition-normal: 300ms var(--ease-out);
   --transition-slow: 500ms var(--ease-out);
+  --transition-cinematic: 800ms var(--ease-cinematic);
 
   /* Heights */
   --topbar-height: 80px;

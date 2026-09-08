@@ -1,56 +1,290 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test'
+import { setup, tracks, userId, playerBar, playFirst } from './fixtures'
 
-test.describe('V2 Core Playback & Navigation', () => {
-  
-  test('Landing Page renders and opens Auth Modal', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('text=Podcast Vault')).toBeVisible();
-    await expect(page.locator('text=Start Listening Now')).toBeVisible();
-    
-    // Open Auth Modal
-    await page.click('text=Log In');
-    await expect(page.locator('text=Welcome Back')).toBeVisible();
-  });
+test('landing, login, registration confirmation and authenticated routes', async ({ page }) => {
+  const { errors } = await setup(page, { signedIn: false })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Log In', exact: true }).click()
+  await page.locator('input[type=email]').fill('listener@example.test')
+  await page.locator('input[type=password]').fill('fixture-password')
+  await page.getByRole('dialog').getByRole('button', { name: 'Log In', exact: true }).click()
+  await expect(page.locator('.v2-topbar')).toBeVisible()
+  await page.goto('/settings'); await page.getByRole('button', { name: 'Log out' }).click()
+  await expect(page.getByRole('button', { name: 'Start Listening Now' })).toBeVisible()
+  await page.getByRole('button', { name: 'Sign Up', exact: true }).click()
+  if (await page.getByRole('heading', { name: 'Welcome Back' }).count()) await page.getByRole('button', { name: 'Sign up', exact: true }).click()
+  await page.locator('input[type=text]').fill('New listener')
+  await page.locator('input[type=email]').fill('new@example.test')
+  await page.locator('input[type=password]').fill('fixture-password')
+  await page.getByRole('dialog').getByRole('button', { name: 'Sign Up', exact: true }).click()
+  await expect(page.getByText('Check your email to confirm your account, then log in.')).toBeVisible()
+  expect(errors).toEqual([])
+})
 
-  // Since we require Supabase auth to proceed, a full E2E test without a test user is tricky.
-  // Assuming we bypass auth or have a test user:
-  test('App Shell renders when authenticated', async ({ page }) => {
-    // In a real environment, we'd inject session into localStorage or login.
-    // We will simulate local storage state.
-    await page.addInitScript(() => {
-      window.localStorage.setItem('sb-ywfwsklpmoogvfscjrja-auth-token', JSON.stringify({
-        access_token: 'fake_token',
-        user: { id: 'test_user', email: 'test@example.com' }
-      }));
-    });
-    
-    await page.goto('/');
-    
-    // Check Topbar and Sidebar
-    await expect(page.locator('.v2-topbar')).toBeVisible();
-    await expect(page.locator('.v2-sidebar')).toBeVisible();
-  });
+for (const shuffle of [false, true]) for (const repeat of ['none', 'one', 'all']) {
+  test(`natural endings: shuffle=${shuffle}, repeat=${repeat}`, async ({ page }) => {
+    const { errors } = await setup(page, { seconds: 1.2, preferences: { volume: .1, shuffle, repeat, autoplay: true } })
+    await playFirst(page)
+    await expect.poll(() => page.evaluate(() => window.mediaEvents.filter(e => e.event === 'ended').length), { timeout: 12000 }).toBeGreaterThanOrEqual(3)
+    const played = await page.evaluate(() => window.mediaEvents.filter(e => e.event === 'playing').map(e => new URL(e.src).pathname))
+    if (repeat === 'one') expect(new Set(played).size).toBe(1)
+    else if (!shuffle) expect(played.slice(0, 3)).toEqual(['/test-audio/1.wav', '/test-audio/2.wav', '/test-audio/3.wav'])
+    else expect(new Set(played.slice(0, 3)).size).toBe(3)
+    if (repeat === 'none') await expect(playerBar(page).getByTitle('Play', { exact: true })).toBeVisible()
+    if (repeat === 'all') await expect.poll(() => page.evaluate(() => window.mediaEvents.filter(e => e.event === 'playing').length)).toBeGreaterThanOrEqual(4)
+    expect(await page.evaluate(() => window.testAudio.filter(a => a.src).length)).toBe(1)
+    expect(errors).toEqual([])
+  })
+}
+test('repeat-all restarts a one-item queue, duplicates advance and restoration stays paused', async ({ page }) => {
+  const queue = [tracks(1)[0], tracks(1)[0]]
+  await setup(page, { player: { queue, index: 0, currentTime: 0 }, preferences: { volume: .1, repeat: 'all', shuffle: false, autoplay: true } })
+  await page.goto('/music')
+  await expect(playerBar(page).getByTitle('Play', { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => window.mediaEvents.filter(e => e.event === 'playing').length)).toBe(0)
+  await playerBar(page).getByTitle('Play', { exact: true }).click()
+  await expect.poll(() => page.evaluate(() => window.mediaEvents.filter(e => e.event === 'ended').length)).toBeGreaterThanOrEqual(2)
+  await playerBar(page).getByTitle('Open Now Playing', { exact: true }).first().click()
+  await page.getByRole('button', { name: 'Remove Track 1 from queue', exact: true }).last().click()
+  const before = await page.evaluate(() => window.mediaEvents.filter(e => e.event === 'ended').length)
+  await expect.poll(() => page.evaluate(() => window.mediaEvents.filter(e => e.event === 'ended').length)).toBeGreaterThan(before)
+})
+test('queue removal, seek, pause, volume and refresh persistence', async ({ page }) => {
+  const { errors } = await setup(page)
+  await playFirst(page)
+  await playerBar(page).getByTitle('Next', { exact: true }).click()
+  await expect(playerBar(page)).toContainText('Track 2')
+  await playerBar(page).getByTitle('Pause', { exact: true }).click()
+  await playerBar(page).getByRole('slider', { name: 'Playback position' }).press('ArrowRight')
+  await playerBar(page).getByTitle('Open Now Playing', { exact: true }).first().click()
+  await page.getByRole('button', { name: 'Remove Track 1 from queue', exact: true }).click()
+  await expect(playerBar(page)).toContainText('Track 2')
+  await page.getByRole('button', { name: 'Remove Track 2 from queue', exact: true }).click()
+  await expect(playerBar(page)).toContainText('Track 3')
+  await page.getByTitle('Close', { exact: true }).click()
+  await playerBar(page).getByRole('slider', { name: 'Volume', exact: true }).fill('0.35')
+  await page.reload()
+  await expect(playerBar(page)).toContainText('Track 3')
+  await expect(playerBar(page).getByTitle('Play', { exact: true })).toBeVisible()
+  await expect(playerBar(page).getByRole('slider', { name: 'Volume', exact: true })).toHaveValue('0.35')
+  expect(errors).toEqual([])
+})
+test('playlist CRUD, song ordering and profile persist through refresh', async ({ page }) => {
+  const { db, errors } = await setup(page)
+  await page.goto('/library')
+  await page.getByRole('button', { name: 'Create playlist', exact: true }).click()
+  await page.getByLabel('Name', { exact: true }).fill('Road trip')
+  await page.getByLabel('Description', { exact: true }).fill('Songs for the road')
+  await page.getByRole('button', { name: 'Save playlist' }).click()
+  await page.getByLabel('Add song', { exact: true }).selectOption(db.music_tracks[0].id)
+  await page.getByLabel('Add song', { exact: true }).selectOption(db.music_tracks[1].id)
+  await page.getByRole('button', { name: 'Move Track 2 up' }).click()
+  await expect.poll(() => db.playlists[0]?.track_ids[0]).toBe(db.music_tracks[1].id)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Road trip' })).toBeVisible()
+  await page.getByRole('button', { name: 'Play playlist' }).click()
+  await expect(playerBar(page)).toContainText('Track 2')
+  await page.getByRole('button', { name: 'Edit playlist' }).click()
+  await page.getByLabel('Name', { exact: true }).fill('Road trip edited')
+  await page.getByRole('button', { name: 'Save playlist' }).click()
+  await page.getByRole('button', { name: 'Remove Track 1', exact: true }).click()
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByRole('button', { name: 'Delete playlist' }).click()
+  await expect.poll(() => db.playlists.length).toBe(0)
+  await page.goto('/profile')
+  await page.getByRole('button', { name: 'Edit profile' }).click()
+  await page.getByLabel('Display name').fill('Updated listener')
+  await page.getByLabel('Username', { exact: true }).fill('updated_listener')
+  await page.getByRole('button', { name: 'Save profile' }).click()
+  await expect(page.getByText('Profile saved')).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Updated listener' })).toBeVisible()
+  expect(errors).toEqual([])
+})
+test('settings, filtering, search and podcast pause/resume', async ({ page }) => {
+  const { podcastId, errors } = await setup(page)
+  await page.goto('/settings')
+  await page.getByLabel('Shuffle', { exact: true }).check()
+  await page.getByLabel('Repeat', { exact: true }).selectOption('one')
+  await page.getByLabel('Automatically play next').uncheck()
+  await page.getByLabel('Theme').selectOption('light')
+  await page.reload()
+  await expect(page.getByLabel('Shuffle', { exact: true })).toBeChecked()
+  await expect(page.getByLabel('Repeat', { exact: true })).toHaveValue('one')
+  await expect(page.locator('html')).toHaveAttribute('data-theme','light')
+  await page.goto('/music'); await page.getByRole('tab', { name: 'Rock', exact: true }).click()
+  await expect(page.locator('.v2-premium-card')).toHaveCount(1)
+  await page.getByRole('textbox', { name: 'Search library' }).fill('Track 3')
+  await expect(page.locator('.v2-search-results')).toContainText('Track 3')
+  await page.goto(`/podcasts/${podcastId}`)
+  await page.locator('.v2-ep-row').filter({ hasText: 'Episode 2' }).click()
+  await expect(playerBar(page)).toContainText('Episode 2')
+  await page.locator('.v2-ep-row').filter({ hasText: 'Episode 2' }).click()
+  await expect(playerBar(page).getByTitle('Play', { exact: true })).toBeVisible()
+  expect(errors).toEqual([])
+})
+test('favorites and real history survive refresh; logout clears private UI and audio', async ({ page }) => {
+  const { db, errors } = await setup(page)
+  await playFirst(page)
+  await expect.poll(() => page.evaluate(() => window.testAudio.find(a => a.src)?.currentTime || 0)).toBeGreaterThan(1)
+  await playerBar(page).getByTitle('Favorite', { exact: true }).click()
+  await playerBar(page).getByTitle('Pause', { exact: true }).click()
+  await expect.poll(() => db.soundverse_activity.filter(r => r.liked).length).toBe(1)
+  await page.goto('/library'); await expect(page.getByRole('heading', { name: 'Listening history' })).toBeVisible()
+  await page.reload(); await expect(page.getByRole('heading', { name: 'Favorite content' }).locator('..')).toContainText('Track 1')
+  await page.goto('/settings'); await page.getByRole('button', { name: 'Log out' }).click()
+  await expect(page.locator('.v2-player-bar')).toHaveCount(0)
+  expect(await page.evaluate(() => window.testAudio.filter(a => a.src).length)).toBe(0)
+  expect(errors).toEqual([])
+})
+test('catalog failures and admin denial remain visible without crashes', async ({ page }) => {
+  const { errors } = await setup(page, { fail: 'music_tracks' })
+  await page.goto('/music')
+  await expect(page.getByRole('alert')).toContainText('music_tracks unavailable')
+  await page.goto('/admin')
+  await expect(page.getByText('You do not have access to administration.')).toBeVisible()
+  expect(errors).toEqual([])
+})
+for (const [width,height] of [[1920,1080],[1440,900],[1280,800],[768,1024],[430,932],[390,844],[375,812]]) {
+  test(`responsive ${width}x${height}`, async ({ page }) => {
+    const { errors } = await setup(page)
+    await page.setViewportSize({ width, height })
+    await playFirst(page)
+    for (const path of ['/music','/library','/settings','/profile','/podcasts','/']) {
+      await page.goto(path)
+      await expect(page.locator('main')).toBeVisible()
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+      const overflow = await page.locator('.v2-main-content').evaluate(el => el.scrollWidth > el.clientWidth + 1)
+      expect(overflow, `Content overflow on ${path}`).toBe(false)
+    }
+    await playerBar(page).getByTitle('Open Now Playing', { exact: true }).first().click()
+    await expect(page.locator('.v2-np-fullscreen').getByTitle('Play', { exact: true })).toBeVisible()
+    await page.screenshot({ path: `audit/player-${width}x${height}.png` })
+    expect(errors).toEqual([])
+  })
+}
 
-  test('Audio Engine initializes correctly', async ({ page }) => {
-    await page.addInitScript(() => {
-      window.localStorage.setItem('sb-ywfwsklpmoogvfscjrja-auth-token', JSON.stringify({
-        access_token: 'fake_token',
-        user: { id: 'test_user', email: 'test@example.com' }
-      }));
-      // Pre-seed a queue item to check if the player mounts
-      window.localStorage.setItem('v2_player_state', JSON.stringify({
-        savedQueue: [{ id: '1', title: 'Test Track', artist: 'Test Artist', url: 'https://example.com/audio.mp3' }],
-        savedIndex: 0,
-        savedVolume: 0.5
-      }));
-    });
-
-    await page.goto('/');
-
-    // Check if player mounted and restored state
-    await expect(page.locator('.v2-player')).toBeVisible();
-    await expect(page.locator('text=Test Track')).toBeVisible();
-  });
-
-});
-
+test('autoplay off stops after a natural ending', async ({ page }) => {
+  await setup(page, { seconds: 1, preferences: { volume: .1, repeat: 'none', shuffle: false, autoplay: false } })
+  await playFirst(page)
+  await expect.poll(() => page.evaluate(() => window.mediaEvents.filter(e => e.event === 'ended').length)).toBe(1)
+  await expect(playerBar(page)).toContainText('Track 1')
+  await expect(playerBar(page).getByTitle('Play', { exact: true })).toBeVisible()
+})
+test('play next overrides shuffle, track menu favorites and add-to-playlist work', async ({ page }) => {
+  const { db } = await setup(page, { preferences: { volume: .1, shuffle: true, repeat: 'none', autoplay: true } })
+  db.playlists.push({ id: '55555555-5555-4555-8555-555555555555', user_id: userId, name: 'Saved songs', track_ids: [], revision: 0 })
+  await playFirst(page)
+  const card = page.locator('.v2-premium-card').filter({ hasText: 'Track 3' })
+  await card.getByLabel('Actions for Track 3').click()
+  await card.getByRole('button', { name: 'Play next', exact: true }).click()
+  await card.getByLabel('Add Track 3 to playlist').selectOption(db.playlists[0].id)
+  await expect.poll(() => db.playlists[0].track_ids.length).toBe(1)
+  await playerBar(page).getByTitle('Next', { exact: true }).click()
+  await expect(playerBar(page)).toContainText('Track 3')
+})
+test('playback rejection and failed media show recoverable errors', async ({ page }) => {
+  const { errors } = await setup(page)
+  await page.addInitScript(() => {
+    const nativePlay = HTMLMediaElement.prototype.play
+    let rejected = false
+    HTMLMediaElement.prototype.play = function() {
+      if (!rejected) { rejected = true; return Promise.reject(new DOMException('Blocked fixture', 'NotAllowedError')) }
+      return nativePlay.call(this)
+    }
+  })
+  await page.goto('/music')
+  await page.locator('.v2-premium-card').filter({ hasText: 'Track 1' }).click()
+  await expect(page.getByRole('alert')).toContainText('Playback was blocked')
+  await playerBar(page).getByTitle('Play', { exact: true }).click()
+  await expect(playerBar(page).getByTitle('Pause', { exact: true })).toBeVisible()
+  await page.route('**/test-audio/2.wav?**', route => route.fulfill({ status: 404, body: 'Not found' }))
+  await playerBar(page).getByTitle('Next', { exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText(/Audio could not be loaded|Unable to play/)
+  await playerBar(page).getByTitle('Next', { exact: true }).click()
+  await expect(playerBar(page)).toContainText('Track 3')
+  await expect(playerBar(page).getByTitle('Pause', { exact: true })).toBeVisible()
+  expect(errors).toEqual([])
+})
+test('offline activity persists locally and reports cloud failure', async ({ page }) => {
+  await setup(page, { fail: 'soundverse_activity' })
+  await playFirst(page)
+  await expect.poll(() => page.evaluate(() => window.testAudio.find(a => a.src)?.currentTime || 0)).toBeGreaterThan(1)
+  await playerBar(page).getByTitle('Favorite', { exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('cloud sync failed')
+  await playerBar(page).getByTitle('Pause', { exact: true }).click()
+  await page.reload()
+  await expect(playerBar(page).getByTitle('Remove favorite', { exact: true })).toBeVisible()
+  const saved = await page.evaluate(id => JSON.parse(localStorage.getItem(`soundverse_activity:${id}`)), userId)
+  expect(saved.dirty.length).toBeGreaterThan(0)
+  expect(Object.values(saved.rows)[0].listened_seconds).toBeGreaterThan(0)
+})
+test('corrupt storage does not crash and empty queue stays empty after refresh', async ({ page }) => {
+  const { errors } = await setup(page, { preferences: { volume: 'bad', repeat: 'bogus', shuffle: 'bad' }, player: { queue: [{ id: {}, title: {} }], index: -100 } })
+  await page.goto('/music')
+  await expect(page.locator('.v2-premium-card')).toHaveCount(3)
+  await page.locator('.v2-premium-card').filter({ hasText: 'Track 1' }).click()
+  await playerBar(page).getByTitle('Open Now Playing', { exact: true }).first().click()
+  for (const n of [3,2,1]) await page.getByRole('button', { name: `Remove Track ${n} from queue`, exact: true }).click()
+  await expect(playerBar(page)).toHaveCount(0)
+  await page.reload(); await expect(page.locator('.v2-premium-card')).toHaveCount(3)
+  await expect(playerBar(page)).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+test('podcast resume restores the saved offset after metadata loads', async ({ page }) => {
+  const { podcastId } = await setup(page, { seconds: 30 })
+  await page.goto(`/podcasts/${podcastId}`)
+  await page.locator('.v2-ep-row').filter({ hasText: 'Episode 1' }).click()
+  await expect(playerBar(page).getByTitle('Pause', { exact: true })).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.testAudio.find(a => a.src)?.currentTime || 0)).toBeGreaterThan(.3)
+  await playerBar(page).getByRole('slider', { name: 'Playback position' }).press('ArrowRight')
+  await playerBar(page).getByTitle('Pause', { exact: true }).click()
+  await expect.poll(() => page.evaluate(() => window.testAudio.find(a => a.src)?.currentTime || 0)).toBeGreaterThan(5)
+  await page.reload()
+  await expect(playerBar(page).getByTitle('Play', { exact: true })).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.testAudio.find(a => a.src)?.currentTime || 0)).toBeGreaterThan(5)
+  await page.locator('.v2-ep-row').filter({ hasText: 'Episode 1' }).click()
+  await expect(playerBar(page).getByTitle('Pause', { exact: true })).toBeVisible()
+})
+test('admin creates, edits, publishes and deletes catalog content', async ({ page }) => {
+  const { db, errors } = await setup(page, { admin: true })
+  await page.goto('/admin')
+  await page.getByRole('button', { name: 'Add content' }).click()
+  await page.getByLabel('title', { exact: true }).fill('Admin song')
+  await page.getByLabel('audio url', { exact: true }).fill('https://example.test/song.mp3')
+  await page.getByRole('button', { name: 'Save content' }).click()
+  const row = page.locator('.v2-media-row').filter({ hasText: 'Admin song' })
+  await expect(row).toBeVisible()
+  await row.getByRole('button', { name: 'Publish', exact: true }).click()
+  await expect.poll(() => db.music_tracks.find(t => t.title === 'Admin song')?.published).toBe(true)
+  await row.getByRole('button', { name: 'Edit', exact: true }).click()
+  await page.getByLabel('title', { exact: true }).fill('Edited song')
+  await page.getByRole('button', { name: 'Save content' }).click()
+  page.once('dialog', dialog => dialog.accept())
+  await page.locator('.v2-media-row').filter({ hasText: 'Edited song' }).getByRole('button', { name: 'Delete' }).click()
+  await expect.poll(() => db.music_tracks.some(t => t.title === 'Edited song')).toBe(false)
+  expect(errors).toEqual([])
+})
+test('stale playlist updates show a conflict instead of overwriting', async ({ page }) => {
+  const { db } = await setup(page)
+  const id = '55555555-5555-4555-8555-555555555555'
+  db.playlists.push({ id, user_id: userId, name: 'Shared across tabs', track_ids: [], revision: 0 })
+  await page.goto(`/library?playlist=${id}`)
+  await expect(page.getByRole('heading', { name: 'Shared across tabs' })).toBeVisible()
+  db.playlists[0].revision = 1
+  await page.getByLabel('Add song', { exact: true }).selectOption(db.music_tracks[0].id)
+  await expect(page.getByRole('alert')).toContainText('changed elsewhere')
+  expect(db.playlists[0].track_ids).toEqual([])
+})
+test('landing and dialogs fit mobile and keyboard focus stays in dialogs', async ({ page }) => {
+  await setup(page, { signedIn: false })
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Sign Up', exact: true })).toBeInViewport()
+  await page.screenshot({ path: 'audit/landing-mobile.png', fullPage: true })
+  await page.getByRole('button', { name: 'Sign Up', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible()
+  await page.keyboard.press('Shift+Tab')
+  expect(await page.evaluate(() => !!document.activeElement.closest('[role=dialog]'))).toBe(true)
+  await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toHaveCount(0)
+})

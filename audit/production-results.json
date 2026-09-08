@@ -1,0 +1,10 @@
+{
+  "passed": [
+    "production bundle boots",
+    "service worker activates",
+    "192px and 512px manifest icons exist",
+    "offline navigation shows standalone fallback",
+    "reconnect retry restores application",
+    "no uncaught browser errors"
+  ]
+}

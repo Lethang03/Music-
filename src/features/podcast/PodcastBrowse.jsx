@@ -2,17 +2,20 @@ import React, { useState } from 'react'
 import { Play, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useLibrary } from '../../contexts/LibraryContext'
+import TiltCard from '../../components/ui/TiltCard'
 
 const CATEGORY_FILTERS = ['Tất cả', 'Giáo dục', 'Tâm lý', 'Công nghệ', 'Kinh doanh', 'Đời sống', 'Sức khỏe']
 
 export default function PodcastBrowse() {
   const { podcasts, loading } = useLibrary()
   const navigate = useNavigate()
-  const [activeFilter, setActiveFilter] = useState('Tất cả')
+  const [activeFilter, setActiveFilter] = useState('All')
+  const categories = ['All', ...new Set(podcasts.map(p => p.category).filter(Boolean))]
+  const filtered = podcasts.filter(p => activeFilter === 'All' || p.category === activeFilter)
 
   if (loading) return <div className="v2-page-loading">Loading Podcasts...</div>
 
-  const hasPodcasts = podcasts?.length > 0
+  const hasPodcasts = filtered.length > 0
 
   const handlePodcastClick = (pod) => {
     navigate(`/podcasts/${pod.id}`)
@@ -26,7 +29,7 @@ export default function PodcastBrowse() {
       </header>
 
       <div className="v2-filter-row" role="tablist" aria-label="Category filter">
-        {CATEGORY_FILTERS.map(f => (
+        {categories.map(f => (
           <button
             key={f}
             role="tab"
@@ -40,24 +43,24 @@ export default function PodcastBrowse() {
       </div>
 
       {/* Hero Banner */}
-      <div className="v2-podcast-hero">
+      <TiltCard className="v2-podcast-hero">
         <div className="v2-podcast-hero-text">
           <h2>Những câu chuyện làm bạn<br />lớn hơn mỗi ngày</h2>
-          <button className="v2-btn-primary" style={{ width: 'max-content', marginTop: '8px' }}>
+          <button className="v2-btn-primary" disabled={!filtered.length} onClick={() => handlePodcastClick(filtered[0])} style={{ width: 'max-content', marginTop: '8px' }}>
             Khám phá ngay
           </button>
         </div>
-      </div>
+      </TiltCard>
 
       {hasPodcasts ? (
         <section className="v2-section">
           <div className="v2-section-hdr">
             <h2>Podcast nổi bật</h2>
-            <span className="v2-ep-count">{podcasts.length} shows</span>
+            <span className="v2-ep-count">{filtered.length} shows</span>
           </div>
           <div className="v2-premium-grid">
-            {podcasts.map((pod) => (
-              <div
+            {filtered.map((pod) => (
+              <TiltCard
                 key={pod.id}
                 className="v2-premium-card"
                 role="button"
@@ -66,7 +69,7 @@ export default function PodcastBrowse() {
                 onKeyDown={e => e.key === 'Enter' && handlePodcastClick(pod)}
                 title={`Mở ${pod.title}`}
               >
-                <div className="v2-card-artwork">
+                <div className="v2-card-artwork podcast-artwork">
                   <img
                     src={pod.image || pod.cover_url}
                     alt={pod.title}
@@ -83,7 +86,7 @@ export default function PodcastBrowse() {
                   <strong>{pod.title}</strong>
                   <span>{pod.author}</span>
                 </div>
-              </div>
+              </TiltCard>
             ))}
           </div>
         </section>

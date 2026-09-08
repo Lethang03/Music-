@@ -1,14 +1,18 @@
-import React, { useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import React, { useState, useRef, useCallback } from 'react'
+import { supabase, supabaseReady } from '../../lib/supabase'
+import { useDialog } from '../../lib/useDialog'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function AuthModal({ onClose, mode = 'login' }) {
-  const { setProfile } = useAuth()
+  const dialogRef = useRef(null)
+  const close = useCallback(() => onClose?.(), [onClose])
+  useDialog(dialogRef, close)
   const [isLogin, setIsLogin] = useState(mode === 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -17,6 +21,7 @@ export default function AuthModal({ onClose, mode = 'login' }) {
     setLoading(true)
 
     try {
+      if (!supabaseReady) throw new Error('Sign in is unavailable until the connection is configured.')
       if (isLogin) {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
         if (signInError) throw signInError
@@ -25,7 +30,7 @@ export default function AuthModal({ onClose, mode = 'login' }) {
           email, password, options: { data: { display_name: name } }
         })
         if (signUpError) throw signUpError
-        if (data?.user) setProfile({ id: data.user.id, display_name: name, email })
+        if (!data.session) { setMessage('Check your email to confirm your account, then log in.'); return }
       }
       if (onClose) onClose()
     } catch (err) {
@@ -37,14 +42,15 @@ export default function AuthModal({ onClose, mode = 'login' }) {
 
   return (
     <div className="v2-auth-backdrop">
-      <div className="v2-auth-panel v2-glass">
-        {onClose && <button className="v2-modal-close" onClick={onClose}>✕</button>}
+      <div ref={dialogRef} className="v2-auth-panel v2-glass" role="dialog" aria-modal="true" aria-label={isLogin ? 'Log in' : 'Sign up'}>
+        {onClose && <button aria-label="Close" className="v2-modal-close" onClick={onClose}>✕</button>}
         
         <div className="v2-auth-header">
           <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
           <p>{isLogin ? 'Log in to continue listening.' : 'Join the premium streaming experience.'}</p>
         </div>
 
+        {message && <div role="status">{message}</div>}
         {error && <div className="v2-alert-error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="v2-auth-form">

@@ -1,20 +1,20 @@
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { LibraryProvider } from './contexts/LibraryContext'
+import { LibraryProvider, useLibrary } from './contexts/LibraryContext'
 import { AudioProvider } from './contexts/AudioContext'
 import AppShell from './components/layout/AppShell'
 import AuthModal from './features/auth/AuthModal'
 import LandingPage from './features/landing/LandingPage'
-import HomePage from './features/home/HomePage'
-import MusicLibrary from './features/music/MusicLibrary'
-import PodcastBrowse from './features/podcast/PodcastBrowse'
-import PodcastDetail from './features/podcast/PodcastDetail'
-import Profile from './features/profile/Profile'
-import SearchPage from './features/search/SearchPage'
-import LibraryPage from './features/library/LibraryPage'
-import AdminPage from './features/admin/AdminPage'
-import SettingsPage from './features/settings/SettingsPage'
+const HomePage = lazy(() => import('./features/home/HomePage'))
+const MusicLibrary = lazy(() => import('./features/music/MusicLibrary'))
+const PodcastBrowse = lazy(() => import('./features/podcast/PodcastBrowse'))
+const PodcastDetail = lazy(() => import('./features/podcast/PodcastDetail'))
+const Profile = lazy(() => import('./features/profile/Profile'))
+const SearchPage = lazy(() => import('./features/search/SearchPage'))
+const LibraryPage = lazy(() => import('./features/library/LibraryPage'))
+const AdminPage = lazy(() => import('./features/admin/AdminPage'))
+const SettingsPage = lazy(() => import('./features/settings/SettingsPage'))
 
 // ── Error Boundary ──────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -62,6 +62,15 @@ class ErrorBoundary extends React.Component {
 }
 
 // ── Routes inside AppShell ──────────────────────────────────────────────────
+function AdminRoute() {
+  const { isAdmin } = useAuth()
+  return isAdmin ? <AdminPage /> : <div className="v2-page"><div className="v2-status-banner" role="alert">You do not have access to the Admin Dashboard.</div></div>
+}
+function AudioBridge({ children }) {
+  const { session } = useAuth()
+  const { recordProgress, getResumeTime } = useLibrary()
+  return <AudioProvider storageKey={`soundverse_player:${session.user.id}`} onProgress={recordProgress} getResumeTime={getResumeTime}>{children}</AudioProvider>
+}
 function AppRoutes() {
   return (
     <Routes>
@@ -73,7 +82,7 @@ function AppRoutes() {
       <Route path="/library" element={<LibraryPage />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/settings" element={<SettingsPage />} />
-      <Route path="/admin"   element={<AdminPage />} />
+      <Route path="/admin"   element={<AdminRoute />} />
       {/* Catch-all — redirect to home */}
       <Route path="*" element={<HomePage />} />
     </Routes>
@@ -82,8 +91,9 @@ function AppRoutes() {
 
 // ── Root content — renders landing or authenticated shell ───────────────────
 function AppContent() {
-  const { session, loading } = useAuth()
+  const { session, loading, error } = useAuth()
   const [showAuth, setShowAuth] = React.useState(false)
+  const [authMode, setAuthMode] = React.useState('login')
 
   if (loading) {
     return (
@@ -106,16 +116,15 @@ function AppContent() {
   if (!session) {
     return (
       <>
-        <LandingPage onShowAuth={() => setShowAuth(true)} />
-        {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+        {error && <div className="v2-status-banner" role="alert">{error}</div>}
+        <LandingPage onShowAuth={mode => { setAuthMode(mode === 'register' ? 'register' : 'login'); setShowAuth(true) }} />
+        {showAuth && <AuthModal mode={authMode} onClose={() => setShowAuth(false)} />}
       </>
     )
   }
 
   return (
-    <AppShell>
-      <AppRoutes />
-    </AppShell>
+    <LibraryProvider key={session.user.id}><AudioBridge><AppShell><Suspense fallback={<div className="v2-page-loading">Loading page…</div>}><AppRoutes /></Suspense></AppShell></AudioBridge></LibraryProvider>
   )
 }
 
@@ -124,11 +133,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <LibraryProvider>
-          <AudioProvider>
-            <AppContent />
-          </AudioProvider>
-        </LibraryProvider>
+        <AppContent />
       </AuthProvider>
     </ErrorBoundary>
   )

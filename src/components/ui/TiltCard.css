@@ -1,0 +1,29 @@
+.v2-tilt-card {
+  position: relative;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.v2-tilt-glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  mix-blend-mode: overlay;
+}
+
+/* Fallback for touch devices */
+@media (hover: none) {
+  .v2-tilt-card {
+    transform: none !important;
+    transition: none !important;
+  }
+  .v2-tilt-glare {
+    display: none;
+  }
+}
+

@@ -1,238 +1,74 @@
-import React, { useState } from 'react'
-import { Play, Plus, History, Library as LibraryIcon, X, Loader2, AlertCircle } from 'lucide-react'
+import React, { useState, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useDialog } from '../../lib/useDialog'
 import { useLibrary } from '../../contexts/LibraryContext'
-import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
-
+import { useAudio } from '../../contexts/AudioContext'
+import { validUrl } from '../../lib/storage'
+import TrackActions from '../../components/TrackActions'
 export default function LibraryPage() {
-  const { session } = useAuth()
-  const { playlists, history, loadPublicLibrary } = useLibrary()
-  
-  const [isCreating, setIsCreating] = useState(false)
-  const [newPlaylistName, setNewPlaylistName] = useState('')
-  const [saving, setSaving] = useState(false)
+  const { playlists, tracks, history, favorites, loading, savePlaylist, deletePlaylist } = useLibrary()
+  const { playItem } = useAudio()
+  const [params, setParams] = useSearchParams()
+  const selected = playlists.find(p => p.id === params.get('playlist'))
+  const [form, setForm] = useState(null)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-
-  const handleCreatePlaylist = async () => {
-    if (!newPlaylistName.trim() || !session?.user?.id) return
-    
-    setSaving(true)
-    setError('')
-    try {
-      const { error: insertError } = await supabase
-        .from('playlists')
-        .insert([{ user_id: session.user.id, name: newPlaylistName.trim() }])
-        
-      if (insertError) throw insertError
-      
-      setNewPlaylistName('')
-      setIsCreating(false)
-      await loadPublicLibrary() // Refresh to see the new playlist
-    } catch (err) {
-      setError(err.message || 'Lỗi khi tạo playlist. Bảng playlists có thể chưa được cấu hình đúng.')
-    } finally {
-      setSaving(false)
-    }
+  const dialogRef = useRef(null)
+  useDialog(dialogRef, () => { if (!busy) setForm(null) }, !!form)
+  const run = async action => {
+    setBusy(true); setError('')
+    try { await action() } catch (err) { setError(err.message) } finally { setBusy(false) }
   }
-
-  return (
-    <div className="v2-page v2-animate-fade">
-      <header className="v2-page-header">
-        <h1>Your Library</h1>
-      </header>
-
-      <section className="v2-section">
-        <h2>Playlists</h2>
-        <div className="v2-premium-grid">
-          <div 
-            className="v2-premium-card v2-create-playlist-card"
-            role="button"
-            tabIndex={0}
-            onClick={() => setIsCreating(true)}
-            onKeyDown={e => e.key === 'Enter' && setIsCreating(true)}
-          >
-            <div className="v2-create-icon-wrapper">
-              <Plus size={32} />
-            </div>
-            <strong>Create New</strong>
-            <span>Curate your own vibe</span>
-          </div>
-          
-          {playlists?.map(playlist => (
-            <div key={playlist.id} className="v2-premium-card">
-              <div className="v2-card-artwork">
-                 <div className="v2-playlist-placeholder">
-                   <LibraryIcon size={32} color="var(--text-tertiary)" />
-                 </div>
-                 <div className="v2-card-overlay">
-                  {/* Playlist playback not fully implemented yet due to missing tracks mapping */}
-                  <button className="v2-card-play-btn" onClick={() => alert('Thêm bài hát vào playlist chưa được hỗ trợ (Thiếu bảng backend).')}>
-                    <Play size={24} fill="currentColor" style={{ marginLeft: '2px' }} />
-                  </button>
-                </div>
-              </div>
-              <div className="v2-card-meta">
-                <strong>{playlist.name}</strong>
-                <span>Playlist</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* History section marked as coming soon / missing backend */}
-      <section className="v2-section" style={{ marginTop: 'var(--space-7)' }}>
-        <h2>Listening History <span className="v2-coming-soon-badge">Coming Soon</span></h2>
-        <div className="v2-list v2-disabled-feature">
-          {history?.slice(0, 10).map((item, i) => (
-            <div key={i} className="v2-list-item">
-              <div className="v2-list-icon"><History size={20} /></div>
-              <div className="v2-list-item-info">
-                <strong>{item.media_id}</strong>
-                <small>{new Date(item.played_at).toLocaleDateString()}</small>
-              </div>
-            </div>
-          ))}
-          {(!history || history.length === 0) && (
-            <div className="v2-empty-state-banner">
-              <div className="v2-empty-banner-icon"><History size={32} /></div>
-              <div className="v2-empty-banner-text">
-                <h3>No history yet</h3>
-                <p>History tracking is currently disabled (missing backend tables).</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Create Playlist Modal */}
-      {isCreating && (
-        <div className="v2-modal-overlay">
-          <div className="v2-modal-content">
-            <button className="v2-modal-close" onClick={() => setIsCreating(false)}><X size={24} /></button>
-            <h2>Create Playlist</h2>
-            
-            <div className="v2-input-group" style={{ marginTop: 24 }}>
-              <label className="v2-label">Name</label>
-              <input 
-                type="text" 
-                className="v2-input" 
-                placeholder="My Awesome Playlist"
-                value={newPlaylistName}
-                onChange={e => setNewPlaylistName(e.target.value)}
-                autoFocus
-              />
-            </div>
-            
-            {error && (
-              <div className="v2-alert-error" style={{ marginBottom: 16 }}>
-                <AlertCircle size={16} /> {error}
-              </div>
-            )}
-            
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
-              <button className="v2-btn-secondary" onClick={() => setIsCreating(false)} disabled={saving}>
-                Cancel
-              </button>
-              <button 
-                className="v2-btn-primary" 
-                onClick={handleCreatePlaylist}
-                disabled={!newPlaylistName.trim() || saving}
-              >
-                {saving ? <Loader2 size={16} className="v2-spin" /> : 'Create'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        .v2-page { display: flex; flex-direction: column; gap: var(--space-6); }
-        .v2-page-header h1 { font-size: 3rem; margin-bottom: 8px; font-weight: 800; letter-spacing: -0.03em; }
-        
-        .v2-section h2 { font-size: 1.5rem; margin-bottom: var(--space-5); font-weight: 800; display: flex; align-items: center; gap: 12px; }
-        
-        .v2-create-playlist-card { 
-          align-items: center; justify-content: center; text-align: center;
-          background: rgba(255,255,255,0.02);
-          border: 1px dashed rgba(255,255,255,0.1);
-          cursor: pointer;
-        }
-        .v2-create-playlist-card:hover { 
-          background: rgba(255,255,255,0.05); 
-          border-color: var(--accent-primary);
-        }
-        .v2-create-icon-wrapper { 
-          width: 64px; height: 64px; border-radius: 50%; 
-          background: rgba(255,255,255,0.05); 
-          display: grid; place-items: center; 
-          color: var(--text-primary); margin-bottom: var(--space-2);
-          transition: transform var(--transition-fast);
-        }
-        .v2-create-playlist-card:hover .v2-create-icon-wrapper {
-          transform: scale(1.1); background: var(--accent-primary);
-        }
-
-        .v2-playlist-placeholder {
-          width: 100%; height: 100%; display: grid; place-items: center; background: rgba(0,0,0,0.3);
-        }
-
-        .v2-list { display: flex; flex-direction: column; gap: var(--space-2); }
-        .v2-list-item { 
-          display: flex; align-items: center; gap: var(--space-4);
-          padding: var(--space-3) var(--space-4); 
-          background: var(--bg-panel); border-radius: var(--radius-md); 
-          transition: all var(--transition-fast);
-        }
-        .v2-list-icon { color: var(--text-tertiary); }
-        .v2-list-item-info strong { display: block; font-size: 1rem; margin-bottom: 4px; color: var(--text-primary); }
-        .v2-list-item-info small { color: var(--text-secondary); font-size: 0.8125rem; }
-        
-        .v2-empty-state-banner { 
-          display: flex; align-items: center; gap: var(--space-5);
-          background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent);
-          padding: var(--space-5); border-radius: var(--radius-lg);
-          border-left: 2px solid var(--border-strong);
-        }
-        .v2-empty-banner-icon { color: var(--text-tertiary); opacity: 0.5; }
-        .v2-empty-banner-text h3 { font-size: 1.125rem; font-weight: 700; margin-bottom: 4px; }
-        .v2-empty-banner-text p { color: var(--text-secondary); font-size: 0.9375rem; }
-
-        .v2-disabled-feature { opacity: 0.5; filter: grayscale(1); pointer-events: none; }
-        .v2-coming-soon-badge {
-          font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
-          background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px;
-          color: var(--text-secondary);
-        }
-
-        .v2-modal-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-          z-index: 100; display: flex; align-items: center; justify-content: center;
-          animation: fadeIn 0.2s ease-out;
-        }
-        .v2-modal-content {
-          background: var(--bg-panel-elevated); border: 1px solid var(--border-strong);
-          border-radius: var(--radius-lg); padding: 32px; width: 100%; max-width: 480px;
-          position: relative; box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-          animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .v2-modal-close {
-          position: absolute; top: 24px; right: 24px; color: var(--text-secondary);
-          background: none; border: none; cursor: pointer; transition: color 0.15s;
-        }
-        .v2-modal-close:hover { color: var(--text-primary); }
-
-        .v2-alert-error {
-          background: rgba(248, 113, 113, 0.1); color: #f87171;
-          padding: 12px 16px; border-radius: 8px; display: flex; align-items: center; gap: 8px;
-          border: 1px solid rgba(248, 113, 113, 0.2); font-weight: 600; font-size: 0.875rem;
-        }
-
-        .v2-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-    </div>
-  )
+  const items = selected ? (selected.track_ids || []).map(id => tracks.find(t => t.id === id)).filter(Boolean) : []
+  const reorder = (index, offset) => {
+    const ids = [...(selected.track_ids || [])]
+    const source = ids.indexOf(items[index].id), target = ids.indexOf(items[index + offset]?.id)
+    if (target < 0) return
+    ;[ids[source], ids[target]] = [ids[target], ids[source]]
+    run(() => savePlaylist({ track_ids: ids }, selected.id))
+  }
+  return <div className="v2-page v2-animate-fade">
+    <header className="v2-page-header"><h1>Your Library</h1><p>Your collections and listening activity.</p></header>
+    {error && <div role="alert" className="v2-status-banner">{error}</div>}
+    <section className="v2-section"><div className="v2-section-hdr"><h2>Playlists</h2><button className="v2-btn-primary" onClick={() => setForm({ name: '', description: '', cover_url: '' })}>Create playlist</button></div>
+      {loading && <p role="status">Loading playlists…</p>}
+      <div className="v2-premium-grid">{playlists.map(p => <button key={p.id} className="v2-premium-card" onClick={() => setParams({ playlist: p.id })}>
+        <div className="v2-card-artwork">{p.cover_url ? <img src={p.cover_url} alt="" loading="lazy" /> : <div className="v2-art-placeholder">♫</div>}</div>
+        <strong>{p.name}</strong><span>{(p.track_ids || []).length} songs</span>
+      </button>)}</div>
+      {!loading && !playlists.length && <p>Create a playlist to collect your favorite songs.</p>}
+    </section>
+    {selected && <section className="v2-section v2-collection-panel">
+      <h2>{selected.name}</h2><p>{selected.description}</p>
+      <div className="v2-action-row">
+        <button className="v2-btn-primary" disabled={!items.length} onClick={() => playItem(items[0], items, 0)}>Play playlist</button>
+        <button className="v2-btn-secondary" disabled={busy} onClick={() => setForm({ ...selected })}>Edit playlist</button>
+        <button className="v2-btn-secondary" disabled={busy} onClick={() => { if (window.confirm(`Delete playlist “${selected.name}”?`)) run(async () => { await deletePlaylist(selected.id); setParams({}) }) }}>Delete playlist</button>
+      </div>
+      <label>Add song<select aria-label="Add song" value="" disabled={busy} onChange={e => { if (e.target.value) run(() => savePlaylist({ track_ids: [...(selected.track_ids || []), e.target.value] }, selected.id)) }}>
+        <option value="">Choose a song</option>{tracks.filter(t => !(selected.track_ids || []).includes(t.id)).map(t => <option value={t.id} key={t.id}>{t.title} — {t.artist}</option>)}
+      </select></label>
+      {items.map((item, i) => <div className="v2-media-row" key={item.id}>
+        <button className="v2-row-title" onClick={() => playItem(item, items, i)}>{item.title}<small>{item.artist}</small></button>
+        <button aria-label={`Move ${item.title} up`} disabled={busy || i === 0} onClick={() => reorder(i, -1)}>↑</button>
+        <button aria-label={`Move ${item.title} down`} disabled={busy || i === items.length - 1} onClick={() => reorder(i, 1)}>↓</button>
+        <button aria-label={`Remove ${item.title}`} disabled={busy} onClick={() => run(() => savePlaylist({ track_ids: selected.track_ids.filter(id => id !== item.id) }, selected.id))}>Remove</button>
+      </div>)}
+      {!items.length && <p>No playable songs yet. Add a song above.</p>}
+      {(selected.track_ids || []).filter(id => !tracks.some(t => t.id === id)).map(id => <div className="v2-media-row" key={id}><span>Song no longer available</span><button disabled={busy} onClick={() => run(() => savePlaylist({ track_ids: selected.track_ids.filter(x => x !== id) }, selected.id))}>Remove unavailable song</button></div>)}
+    </section>}
+    <section className="v2-section"><h2>Favorite content</h2>{favorites.map((item, i) => <div key={`${item.type}:${item.id}`} className="v2-media-row"><button className="v2-row-title" onClick={() => playItem(item, favorites, i)}>{item.title}<small>{item.artist || item.author}</small></button><TrackActions item={item} /></div>)}{!favorites.length && <p>Use Favorite on a song or episode to save it here.</p>}</section>
+    <section className="v2-section"><h2>Listening history</h2>{history.slice(0, 50).map(row => <div key={row.media_key} className="v2-media-row"><button className="v2-row-title" onClick={() => playItem(row.item, null, 0, row.completed ? 0 : row.position)}>{row.item.title}<small>{row.item.podcast_id ? 'Podcast' : 'Music'} · {new Date(row.played_at).toLocaleString()} · {Math.floor(row.position)}s listened to</small></button><TrackActions item={row.item} /></div>)}{!history.length && <p>Play something to start your listening history.</p>}</section>
+    {form && <div className="v2-modal-overlay"><form ref={dialogRef} className="v2-modal-content" role="dialog" aria-modal="true" aria-label={form.id ? 'Edit playlist' : 'Create playlist'} onSubmit={e => { e.preventDefault(); run(async () => {
+      if (!validUrl(form.cover_url)) throw new Error('Use an HTTP or HTTPS cover image URL.')
+      const saved = await savePlaylist({ name: form.name.trim(), description: form.description || '', cover_url: form.cover_url || null }, form.id)
+      setForm(null); setParams({ playlist: saved.id })
+    }) }}><h2>{form.id ? 'Edit playlist' : 'Create playlist'}</h2>
+      <label>Name<input autoFocus required maxLength={120} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label>
+      <label>Description<textarea maxLength={2000} value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} /></label>
+      <label>Cover image URL<input type="url" value={form.cover_url || ''} onChange={e => setForm({ ...form, cover_url: e.target.value })} /></label>
+      {error && <p role="alert">{error}</p>}
+      <div className="v2-action-row"><button className="v2-btn-primary" disabled={busy || !form.name.trim()}>Save playlist</button><button type="button" className="v2-btn-secondary" disabled={busy} onClick={() => { setForm(null); setError('') }}>Cancel</button></div>
+    </form></div>}
+  </div>
 }

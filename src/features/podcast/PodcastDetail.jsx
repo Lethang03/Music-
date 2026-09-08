@@ -8,6 +8,8 @@ import { supabase, supabaseReady } from '../../lib/supabase'
 import { useAudio } from '../../contexts/AudioContext'
 import { useLibrary } from '../../contexts/LibraryContext'
 
+import TiltCard from '../../components/ui/TiltCard'
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 function formatDuration(secs) {
   if (!secs || secs === 0) return null
@@ -83,95 +85,17 @@ function EpisodeRow({ episode, index, isPlaying, isActive, onPlay, progress }) {
 export default function PodcastDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { podcasts } = useLibrary()
-  const { activeItem, isPlaying, playItem } = useAudio()
+  const { podcasts, episodes: catalogEpisodes, loading, progress, error, loadPublicLibrary } = useLibrary()
+  const { activeItem, isPlaying, playItem, togglePlay } = useAudio()
+  const [selectedSeason, setSelectedSeason] = useState(null)
+  useEffect(() => { setSelectedSeason(null) }, [id])
+  const podcast = podcasts.find(p => p.id === id)
+  const episodes = catalogEpisodes.filter(e => e.podcast_id === id).sort((a, b) => (a.season_number || 0) - (b.season_number || 0) || (a.episode_number || 0) - (b.episode_number || 0) || (a.published_at || '').localeCompare(b.published_at || ''))
+  const loadingPod = loading, loadingEps = loading
+  const errorPod = !loading && !podcast ? 'Podcast not found or unavailable.' : null
+  const errorEps = error && !episodes.length ? error : null
+  const fetchEpisodes = loadPublicLibrary
 
-  const [podcast,      setPodcast]      = useState(null)
-  const [episodes,     setEpisodes]     = useState([])
-  const [loadingPod,   setLoadingPod]   = useState(true)
-  const [loadingEps,   setLoadingEps]   = useState(true)
-  const [errorPod,     setErrorPod]     = useState(null)
-  const [errorEps,     setErrorEps]     = useState(null)
-  const [selectedSeason, setSelectedSeason] = useState(null) // null = all
-
-  // ── Fetch podcast ──────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!id) return
-
-    // First try to find it in the already-loaded LibraryContext cache (instant)
-    const cached = podcasts?.find(p => p.id === id)
-    if (cached) {
-      setPodcast(cached)
-      setLoadingPod(false)
-      return
-    }
-
-    // Fallback: fetch directly (handles direct URL refresh)
-    if (!supabaseReady) {
-      setErrorPod('Supabase not configured.')
-      setLoadingPod(false)
-      return
-    }
-
-    setLoadingPod(true)
-    supabase
-      .from('podcasts')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error) setErrorPod(error.message)
-        else if (!data) setErrorPod('Podcast không tồn tại.')
-        else setPodcast({ ...data, image: data.cover_url || data.image })
-        setLoadingPod(false)
-      })
-  }, [id, podcasts])
-
-  // ── Fetch episodes for this podcast ──────────────────────────────────
-  const fetchEpisodes = useCallback(async () => {
-    if (!id || !supabaseReady) {
-      setLoadingEps(false)
-      return
-    }
-    setLoadingEps(true)
-    setErrorEps(null)
-
-    try {
-      const { data, error } = await supabase
-        .from('episodes')
-        .select('*')
-        .eq('podcast_id', id)
-        .eq('published', true)
-        .order('season_number',  { ascending: true })
-        .order('episode_number', { ascending: true })
-        .order('published_at',   { ascending: true })
-
-      if (error) {
-        console.error('[PodcastDetail] episodes query error:', error)
-        setErrorEps(error.message)
-        setEpisodes([])
-      } else {
-        console.log(`[PodcastDetail] Loaded ${data?.length ?? 0} episodes for podcast ${id}`)
-        setEpisodes(data ?? [])
-        // Default: select first season if multiple seasons exist
-        if (data?.length > 0) {
-          const seasons = [...new Set(data.map(e => e.season_number).filter(s => s != null))]
-          if (seasons.length > 1) setSelectedSeason(seasons[0])
-          // If only 1 or no seasons, show all (selectedSeason stays null)
-        }
-      }
-    } catch (err) {
-      console.error('[PodcastDetail] exception:', err)
-      setErrorEps(err.message)
-      setEpisodes([])
-    } finally {
-      setLoadingEps(false)
-    }
-  }, [id])
-
-  useEffect(() => { fetchEpisodes() }, [fetchEpisodes])
-
-  // ── Season list & filtered episodes ───────────────────────────────────
   const seasons = [...new Set(episodes.map(e => e.season_number).filter(s => s != null))].sort((a, b) => a - b)
   const hasSeasons = seasons.length > 1
 
@@ -194,8 +118,9 @@ export default function PodcastDetail() {
       type:   'episode',
     }))
 
-    playItem(episode, queue, episodeIndex)
-  }, [displayedEpisodes, podcast, playItem])
+    if (activeItem?.id === episode.id && activeItem?.type === 'episode') { togglePlay(); return }
+    playItem(queue[episodeIndex], queue, episodeIndex)
+  }, [displayedEpisodes, podcast, playItem, activeItem, togglePlay])
 
   // ── Loading states ─────────────────────────────────────────────────────
   if (loadingPod) {
@@ -234,12 +159,12 @@ export default function PodcastDetail() {
 
       {/* Podcast Hero */}
       <header className="v2-pd-hero">
-        <div className="v2-pd-artwork-wrap">
+        <TiltCard className="v2-pd-artwork-wrap">
           {artworkUrl
             ? <img src={artworkUrl} alt={podcast.title} className="v2-pd-artwork" />
             : <div className="v2-pd-artwork-placeholder"><Mic size={48} /></div>
           }
-        </div>
+        </TiltCard>
         <div className="v2-pd-hero-info">
           <span className="v2-pd-type-badge">PODCAST</span>
           <h1 className="v2-pd-title">{podcast.title}</h1>
@@ -249,7 +174,7 @@ export default function PodcastDetail() {
             <span>{episodes.length} tập</span>
             {seasons.length > 0 && <span>· {seasons.length} mùa</span>}
           </div>
-          {episodes.length > 0 && (
+          {displayedEpisodes.length > 0 && (
             <button
               className="v2-btn-primary"
               style={{ marginTop: 12, width: 'max-content' }}
@@ -321,7 +246,7 @@ export default function PodcastDetail() {
                   isActive={isActive}
                   isPlaying={isActive && isPlaying}
                   onPlay={() => handlePlay(ep, i)}
-                  progress={null}
+                  progress={progress}
                 />
               )
             })}
@@ -485,6 +410,9 @@ export default function PodcastDetail() {
         .v2-ep-play-btn:hover { transform: scale(1.08) !important; }
 
         /* Responsive */
+        @media (hover: none) {
+          .v2-ep-play-btn { opacity: 1; transform: scale(1); }
+        }
         @media (max-width: 768px) {
           .v2-pd-hero { flex-direction: column; align-items: center; text-align: center; }
           .v2-pd-artwork-wrap { width: 180px; height: 180px; }

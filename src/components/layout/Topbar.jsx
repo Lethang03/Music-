@@ -15,27 +15,22 @@ export default function Topbar() {
       <div className="v2-topbar-content">
         <div className="v2-topbar-left">
            <div className="v2-nav-arrows">
-             <button className="v2-arrow-btn" onClick={() => navigate(-1)}><ChevronLeft size={20}/></button>
-             <button className="v2-arrow-btn" onClick={() => navigate(1)}><ChevronRight size={20}/></button>
+             <button aria-label="Back" className="v2-arrow-btn" onClick={() => navigate(-1)}><ChevronLeft size={20}/></button>
+             <button aria-label="Forward" className="v2-arrow-btn" onClick={() => navigate(1)}><ChevronRight size={20}/></button>
            </div>
         </div>
         
         <div className="v2-topbar-center">
           <div className="v2-search-input-wrapper">
              <Search size={18} className="v2-search-icon" />
-             <input type="text" placeholder="Tìm kiếm bài hát, nghệ sĩ, podcast..." className="v2-global-search" onClick={() => {
-                if (location.pathname !== '/search') navigate('/search')
-             }}/>
+             <input type="text" placeholder="Tìm kiếm bài hát, nghệ sĩ, podcast..." className="v2-global-search" aria-label="Search library" value={new URLSearchParams(location.search).get('q') || ''} onChange={e => navigate(`/search?q=${encodeURIComponent(e.target.value)}`, { replace: location.pathname === '/search' })} onFocus={() => { if (location.pathname !== '/search') navigate('/search') }}/>
           </div>
         </div>
 
         <div className="v2-topbar-right">
-          <button className="v2-icon-btn v2-bell-btn">
-            <Bell size={18} />
-            <span className="v2-notification-dot"></span>
-          </button>
+<Link to="/settings" className="v2-icon-btn" aria-label="Settings">⚙</Link>
           <Link to="/profile" className="v2-user-pill">
-            <img src="https://i.pravatar.cc/150?img=47" alt="Profile" className="v2-user-avatar-img" />
+            {profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="v2-user-avatar-img" /> : <span aria-label="Profile" className="v2-user-avatar-sm">{(profile?.display_name || 'L')[0]}</span>}
           </Link>
         </div>
       </div>

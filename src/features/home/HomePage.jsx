@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { Play, Shuffle, ChevronRight } from 'lucide-react'
 import { useLibrary } from '../../contexts/LibraryContext'
 import { useAudio } from '../../contexts/AudioContext'
+import TiltCard from '../../components/ui/TiltCard'
 
 // Stable mini progress width — avoid Math.random() in render (causes StrictMode re-renders)
-const MOCK_PROGRESSES = [65, 30, 80, 20, 55]
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const { tracks, podcasts, loading } = useLibrary()
-  const { playItem } = useAudio()
+  const { tracks, podcasts, loading, history } = useLibrary()
+  const { playItem, setShuffle } = useAudio()
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -27,6 +27,7 @@ export default function HomePage() {
     )
   }
 
+  const continuing = history.filter(row => !row.completed && row.position > 0).slice(0, 6)
   const hasTracks   = tracks?.length   > 0
   const hasPodcasts = podcasts?.length > 0
 
@@ -46,7 +47,8 @@ export default function HomePage() {
           <div className="v2-hero-actions">
             <button
               className="v2-btn-primary"
-              onClick={() => hasTracks && playItem(tracks[Math.floor(Math.random() * tracks.length)], tracks, 0)}
+              disabled={!hasTracks}
+              onClick={() => { const index = Math.floor(Math.random() * tracks.length); setShuffle(true); playItem(tracks[index], tracks, index) }}
             >
               <Shuffle size={18} /> Phát ngẫu nhiên
             </button>
@@ -55,32 +57,35 @@ export default function HomePage() {
             </button>
           </div>
         </div>
-        <div className="v2-home-hero-visual" aria-hidden="true">
-          <img
-            src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&q=80&w=900"
-            alt=""
-          />
-          <div className="v2-hero-visual-overlay">
-            <h3>Music heals<br />a different<br />kind of you</h3>
-          </div>
+        <div className="v2-home-hero-visual-container">
+          <TiltCard className="v2-home-hero-visual" aria-hidden="true">
+            <div className="v2-hero-vinyl" />
+            <img
+              src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&q=80&w=900"
+              alt=""
+            />
+            <div className="v2-hero-visual-overlay">
+              <h3>Music heals<br />a different<br />kind of you</h3>
+            </div>
+          </TiltCard>
         </div>
       </section>
 
       {/* Continue Listening */}
-      {hasTracks && (
+      {continuing.length > 0 && (
         <section className="v2-section">
           <div className="v2-section-hdr">
             <h2>Tiếp tục nghe</h2>
             <button className="v2-text-link" onClick={() => navigate('/library')}>Xem tất cả <ChevronRight size={14} /></button>
           </div>
           <div className="v2-premium-grid">
-            {tracks.slice(0, 6).map((track, i) => (
-              <div
+            {continuing.map((row, i) => { const track = row.item; return (
+              <TiltCard
                 key={track.id}
                 className="v2-premium-card"
-                onClick={() => playItem(track, tracks, i)}
+                onClick={() => playItem(track, continuing.map(r => r.item), i, row.position)}
                 role="button" tabIndex={0}
-                onKeyDown={e => e.key === 'Enter' && playItem(track, tracks, i)}
+                onKeyDown={e => e.key === 'Enter' && playItem(track, continuing.map(r => r.item), i, row.position)}
               >
                 <div className="v2-card-artwork">
                   <img src={track.image_url || track.cover_url} alt={track.title} />
@@ -95,10 +100,10 @@ export default function HomePage() {
                   <span>{track.artist}</span>
                 </div>
                 <div className="v2-card-mini-progress">
-                  <div style={{ width: `${MOCK_PROGRESSES[i % MOCK_PROGRESSES.length]}%` }} />
+                  <div style={{ width: `${row.duration ? Math.min(100, row.position / row.duration * 100) : 0}%` }} />
                 </div>
-              </div>
-            ))}
+              </TiltCard>
+            )})}
           </div>
         </section>
       )}
@@ -112,14 +117,15 @@ export default function HomePage() {
           </div>
           <div className="v2-premium-grid">
             {podcasts.slice(0, 6).map((pod) => (
-              <div 
+              <TiltCard 
                 key={pod.id} 
                 className="v2-premium-card" 
                 role="button" 
                 tabIndex={0}
                 onClick={() => navigate(`/podcasts/${pod.id}`)}
+                onKeyDown={e => e.key === 'Enter' && navigate(`/podcasts/${pod.id}`)}
               >
-                <div className="v2-card-artwork">
+                <div className="v2-card-artwork podcast-artwork">
                   <img src={pod.image} alt={pod.title} />
                   <div className="v2-card-overlay">
                     <button className="v2-card-play-btn" tabIndex={-1}>
@@ -131,7 +137,7 @@ export default function HomePage() {
                   <strong>{pod.title}</strong>
                   <span>Podcast · {pod.author}</span>
                 </div>
-              </div>
+              </TiltCard>
             ))}
           </div>
         </section>
@@ -178,20 +184,60 @@ export default function HomePage() {
         }
         .v2-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
-        .v2-home-hero-visual {
-          flex: 1.1; position: relative;
+        .v2-home-hero-visual-container {
+          flex: 1.1; 
+          position: relative;
           height: 360px; min-width: 0;
-          border-radius: 20px; overflow: hidden;
+          display: flex;
+          justify-content: flex-end;
+        }
+        .v2-home-hero-visual {
+          width: 85%;
+          height: 100%;
+          position: relative;
+          border-radius: 20px;
           box-shadow: 0 24px 64px rgba(0,0,0,0.6);
         }
         .v2-home-hero-visual img {
           width: 100%; height: 100%; object-fit: cover;
+          position: relative; z-index: 2; border-radius: 20px;
         }
+        .v2-hero-vinyl {
+          position: absolute;
+          top: 5%; bottom: 5%; left: -20%;
+          aspect-ratio: 1;
+          background: repeating-radial-gradient(#111, #111 4px, #1a1a1a 5px, #111 6px);
+          border-radius: 50%;
+          z-index: 1;
+          box-shadow: -10px 0 40px rgba(0,0,0,0.8);
+          animation: v2-hero-vinyl-spin 20s linear infinite;
+        }
+        .v2-hero-vinyl::after {
+          content: '';
+          position: absolute;
+          inset: 38%;
+          background: var(--accent-gradient);
+          border-radius: 50%;
+          box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+        .v2-hero-vinyl::before {
+          content: '';
+          position: absolute;
+          inset: 48%;
+          background: #111;
+          border-radius: 50%;
+          z-index: 2;
+        }
+        @keyframes v2-hero-vinyl-spin {
+          100% { transform: rotate(360deg); }
+        }
+
         .v2-hero-visual-overlay {
           position: absolute; inset: 0;
           background: linear-gradient(130deg, rgba(11,11,19,0.1) 0%, rgba(11,11,19,0.75) 100%);
           display: flex; align-items: flex-end; justify-content: flex-end;
-          padding: 32px;
+          padding: 32px; z-index: 3; border-radius: 20px;
+          pointer-events: none;
         }
         .v2-hero-visual-overlay h3 {
           font-family: Georgia, 'Times New Roman', serif;
@@ -242,11 +288,14 @@ export default function HomePage() {
             text-align: center; align-items: center;
           }
           .v2-home-hero-text { align-items: center; }
-          .v2-home-hero-visual { width: 100%; flex: none; max-height: 280px; }
+          .v2-home-hero-visual-container { width: 100%; flex: none; justify-content: center; max-height: 280px; }
+          .v2-home-hero-visual { width: 85%; }
         }
         @media (max-width: 768px) {
           .v2-page { gap: 36px; }
           .v2-hero-visual-overlay h3 { font-size: 1.5rem; }
+          .v2-home-hero-visual { width: 100%; }
+          .v2-hero-vinyl { display: none; }
         }
       `}</style>
     </div>

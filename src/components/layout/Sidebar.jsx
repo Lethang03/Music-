@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useLibrary } from '../../contexts/LibraryContext'
 
 export default function Sidebar() {
-  const { profile } = useAuth()
+  const { profile, isAdmin } = useAuth()
   const { playlists } = useLibrary()
 
   return (
@@ -50,7 +50,7 @@ export default function Sidebar() {
       <div className="v2-sidebar-playlists">
         <div className="v2-playlist-header">PLAYLISTS</div>
         {playlists?.map(pl => (
-          <NavLink key={pl.id} to="/library" className="v2-nav-item secondary">
+          <NavLink key={pl.id} to={`/library?playlist=${pl.id}`} className="v2-nav-item secondary">
             <Library size={18} />
             <span>{pl.name}</span>
           </NavLink>
@@ -63,7 +63,7 @@ export default function Sidebar() {
       </div>
 
       <div className="v2-sidebar-footer">
-        {profile?.role === 'admin' && (
+        {isAdmin && (
           <NavLink to="/admin" className="v2-nav-item secondary" style={{ marginBottom: '8px' }}>
             <span>Admin Dashboard</span>
           </NavLink>
@@ -73,8 +73,8 @@ export default function Sidebar() {
              {profile?.display_name ? profile.display_name.charAt(0) : 'U'}
           </div>
           <div className="v2-user-meta">
-            <strong>{profile?.display_name || 'Nguyễn Minh'}</strong>
-            <small>Premium Member</small>
+            <strong>{profile?.display_name || 'Listener'}</strong>
+            <small>Listener</small>
           </div>
         </NavLink>
       </div>
@@ -108,17 +108,26 @@ export default function Sidebar() {
           padding: 12px 16px; border-radius: var(--radius-md);
           color: var(--text-secondary); text-decoration: none;
           font-weight: 600; transition: all var(--transition-fast);
-          cursor: pointer;
+          cursor: pointer; position: relative; overflow: hidden;
         }
-        .v2-nav-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.03); }
+        .v2-nav-item::before {
+          content: ''; position: absolute; inset: 0;
+          background: var(--accent-gradient); opacity: 0;
+          transition: opacity var(--transition-normal); z-index: -1;
+        }
+        .v2-nav-item:hover { color: var(--text-primary); transform: translateX(4px); }
+        .v2-nav-item:hover::before { opacity: 0.05; }
         .v2-nav-icon { opacity: 0.8; transition: all var(--transition-fast); }
         
         .v2-nav-item.active {
-          background: rgba(255,255,255,0.06);
           color: var(--text-primary);
+        }
+        .v2-nav-item.active::before {
+          opacity: 0.15;
         }
         .v2-nav-item.active .v2-nav-icon {
           color: var(--accent-primary); opacity: 1;
+          filter: drop-shadow(0 0 6px var(--accent-glow));
         }
         
         .v2-sidebar-divider {
@@ -133,16 +142,16 @@ export default function Sidebar() {
         }
         
         .v2-nav-item.secondary { padding: 10px 16px; font-weight: 500; font-size: 0.875rem; gap: 12px; }
-        .v2-nav-item.secondary:hover { color: var(--text-primary); }
+        .v2-nav-item.secondary:hover { color: var(--text-primary); transform: translateX(2px); }
         .v2-nav-item.secondary.action { color: var(--text-tertiary); }
         .v2-nav-item.secondary.action:hover { color: var(--text-primary); }
 
         .v2-sidebar-footer { padding-top: var(--space-4); border-top: 1px solid rgba(255,255,255,0.05); }
         .v2-user-footer {
           display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: var(--radius-md);
-          text-decoration: none; transition: background var(--transition-fast);
+          text-decoration: none; transition: all var(--transition-fast);
         }
-        .v2-user-footer:hover { background: rgba(255,255,255,0.05); }
+        .v2-user-footer:hover { background: rgba(255,255,255,0.05); transform: translateY(-2px); }
         .v2-user-avatar-sm {
           width: 32px; height: 32px; border-radius: 50%;
           background: var(--text-secondary); color: var(--bg-base);

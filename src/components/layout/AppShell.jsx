@@ -1,10 +1,14 @@
 import React from 'react'
+import { useLibrary } from '../../contexts/LibraryContext'
+import { useAuth } from '../../contexts/AuthContext'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import GlobalPlayer from '../player/GlobalPlayer'
 import BottomNav from './BottomNav'
 
 export default function AppShell({ children }) {
+  const { error, syncError, loadPublicLibrary, syncActivity } = useLibrary()
+  const { error: authError } = useAuth()
   return (
     <div className="v2-app-shell">
       {/* Ambient background blobs — purely decorative */}
@@ -21,6 +25,9 @@ export default function AppShell({ children }) {
         <Topbar />
         <main className="v2-main-content">
           <div className="v2-page-container">
+            {authError && <div role="alert" className="v2-status-banner">{authError}</div>}
+            {error && <div role="alert" className="v2-status-banner">Unable to load part of your library: {error} <button onClick={loadPublicLibrary}>Retry</button></div>}
+            {syncError && <div role="status" className="v2-status-banner">{syncError} <button onClick={syncActivity}>Retry sync</button></div>}
             {children}
           </div>
         </main>
@@ -36,7 +43,7 @@ export default function AppShell({ children }) {
         /* ── Root shell ── */
         .v2-app-shell {
           display: flex;
-          height: 100vh;
+          height: 100dvh;
           overflow: hidden;
           background: var(--bg-base);
           position: relative;
@@ -142,7 +149,7 @@ export default function AppShell({ children }) {
             flex-direction: column;
           }
           .v2-main-wrapper {
-            height: 100vh;
+            height: 100dvh;
           }
           .v2-main-content {
             /* On mobile, leave room for both player mini and bottom nav */

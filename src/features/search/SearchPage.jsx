@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search as SearchIcon, Play } from 'lucide-react'
 import { useLibrary } from '../../contexts/LibraryContext'
 import { useAudio } from '../../contexts/AudioContext'
@@ -8,15 +8,17 @@ export default function SearchPage() {
   const navigate = useNavigate()
   const { tracks, podcasts } = useLibrary()
   const { playItem } = useAudio()
-  const [query, setQuery] = useState('')
+  const [params, setParams] = useSearchParams()
+  const query = params.get('q') || ''
+  const setQuery = q => setParams(q ? { q } : {}, { replace: true })
 
   const filteredTracks = tracks?.filter(t => 
-    t.title.toLowerCase().includes(query.toLowerCase()) || 
+    (t.title || '').toLowerCase().includes(query.toLowerCase()) || (t.genre || '').toLowerCase().includes(query.toLowerCase()) || 
     t.artist?.toLowerCase().includes(query.toLowerCase())
   ) || []
 
   const filteredPodcasts = podcasts?.filter(p => 
-    p.title.toLowerCase().includes(query.toLowerCase()) || 
+    (p.title || '').toLowerCase().includes(query.toLowerCase()) || 
     p.author?.toLowerCase().includes(query.toLowerCase())
   ) || []
 
@@ -43,8 +45,8 @@ export default function SearchPage() {
             <section className="v2-section">
               <h2>Songs</h2>
               <div className="v2-list">
-                {filteredTracks.slice(0, 5).map((track, i) => (
-                  <div key={track.id} className="v2-list-item" onClick={() => playItem(track, filteredTracks, i)}>
+                {filteredTracks.map((track, i) => (
+                  <div key={track.id} className="v2-list-item" role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && playItem(track, filteredTracks, i)} onClick={() => playItem(track, filteredTracks, i)}>
                     <img src={track.image_url || track.cover_url} alt="" />
                     <div className="v2-list-item-info">
                       <strong>{track.title}</strong>
@@ -60,10 +62,10 @@ export default function SearchPage() {
               <section className="v2-section">
                 <h2>Podcasts</h2>
                 <div className="v2-grid">
-                  {filteredPodcasts.slice(0, 4).map(podcast => (
+                  {filteredPodcasts.map(podcast => (
                     <div 
                       key={podcast.id} 
-                      className="v2-card" 
+                      className="v2-card" role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && navigate(`/podcasts/${podcast.id}`)}
                       onClick={() => navigate(`/podcasts/${podcast.id}`)}
                     >
                       <div className="v2-card-img"><img src={podcast.image || podcast.cover_url} alt="" /></div>
@@ -87,10 +89,10 @@ export default function SearchPage() {
           <div className="v2-search-idle">
             <h2>Browse All</h2>
             <div className="v2-grid-browse">
-              <div className="v2-browse-card" onClick={() => setQuery('Pop')} style={{ background: 'linear-gradient(135deg, #FF0076, #590FB7)' }}>Pop</div>
-              <div className="v2-browse-card" onClick={() => setQuery('Electronic')} style={{ background: 'linear-gradient(135deg, #00C9FF, #92FE9D)' }}>Electronic</div>
-              <div className="v2-browse-card" onClick={() => setQuery('Hip-Hop')} style={{ background: 'linear-gradient(135deg, #F09819, #EDDE5D)' }}>Hip-Hop</div>
-              <div className="v2-browse-card" onClick={() => setQuery('Podcast')} style={{ background: 'linear-gradient(135deg, #8E2DE2, #4A00E0)' }}>Podcasts</div>
+              <div className="v2-browse-card" role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && e.currentTarget.click()} onClick={() => setQuery('Pop')} style={{ background: 'linear-gradient(135deg, #FF0076, #590FB7)' }}>Pop</div>
+              <div className="v2-browse-card" role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && e.currentTarget.click()} onClick={() => setQuery('Electronic')} style={{ background: 'linear-gradient(135deg, #00C9FF, #92FE9D)' }}>Electronic</div>
+              <div className="v2-browse-card" role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && e.currentTarget.click()} onClick={() => setQuery('Hip-Hop')} style={{ background: 'linear-gradient(135deg, #F09819, #EDDE5D)' }}>Hip-Hop</div>
+              <div className="v2-browse-card" role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && e.currentTarget.click()} onClick={() => navigate('/podcasts')} style={{ background: 'linear-gradient(135deg, #8E2DE2, #4A00E0)' }}>Podcasts</div>
             </div>
           </div>
         )}

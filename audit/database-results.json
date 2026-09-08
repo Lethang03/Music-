@@ -1,0 +1,31 @@
+{
+  "engine": "PGlite PostgreSQL",
+  "baseline": "Representative schema matching observed columns, not a live database clone",
+  "passed": [
+    "full migration sequence bootstraps an empty public schema",
+    "migration applies: 20260906000000_baseline.sql",
+    "migration applies: 20260907_soundverse_completion.sql",
+    "migration applies: 20260908000000_soundverse_activity.sql",
+    "migration applies: 20260908000001_auth_profile_trigger.sql",
+    "migration applies: 20260908000002_legacy_privacy_and_indexes.sql",
+    "signup trigger creates a profile without an email column",
+    "all migrations can be reapplied without deleting profiles",
+    "anonymous users cannot read profiles",
+    "anonymous users cannot read legacy favorites",
+    "anonymous users see only published tracks",
+    "published episodes under draft podcasts are hidden",
+    "legacy favorites are isolated despite old permissive policies",
+    "existing permissive profile policy cannot expose other users",
+    "profile upsert succeeds using only editable fields",
+    "profile role escalation is denied",
+    "profile of another user cannot be changed",
+    "owned playlist saves and reorders atomically",
+    "unavailable track IDs cannot be added",
+    "playlist cannot be reassigned to another user",
+    "owned activity can be saved",
+    "non-admin catalog writes are denied",
+    "second account cannot read first account playlists or activity",
+    "second account cannot overwrite first account activity",
+    "server-managed admin sees draft content and can publish"
+  ]
+}

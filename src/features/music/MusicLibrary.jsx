@@ -1,18 +1,23 @@
 import React, { useState } from 'react'
 import { Play, ChevronRight } from 'lucide-react'
 import { useLibrary } from '../../contexts/LibraryContext'
+import TrackActions from '../../components/TrackActions'
 import { useAudio } from '../../contexts/AudioContext'
+import TiltCard from '../../components/ui/TiltCard'
 
 const GENRE_FILTERS = ['Tất cả', 'Pop', 'Rock', 'Indie', 'Lofi', 'EDM', 'R&B', 'Hip Hop', 'Acoustic', 'V-Pop']
 
 export default function MusicLibrary() {
   const { tracks, loading } = useLibrary()
   const { playItem } = useAudio()
-  const [activeFilter, setActiveFilter] = useState('Tất cả')
+  const [activeFilter, setActiveFilter] = useState('All')
+  const [sort, setSort] = useState('newest')
+  const genres = ['All', ...new Set(tracks.map(t => t.genre).filter(Boolean))]
+  const filtered = tracks.filter(t => activeFilter === 'All' || t.genre === activeFilter).sort((a, b) => sort === 'title' ? (a.title || '').localeCompare(b.title || '') : sort === 'artist' ? (a.artist || '').localeCompare(b.artist || '') : (b.created_at || '').localeCompare(a.created_at || ''))
 
   if (loading) return <div className="v2-page-loading">Loading Music...</div>
 
-  const hasTracks = tracks?.length > 0
+  const hasTracks = filtered.length > 0
 
   return (
     <div className="v2-page v2-animate-fade">
@@ -22,7 +27,7 @@ export default function MusicLibrary() {
       </header>
 
       <div className="v2-filter-row" role="tablist" aria-label="Genre filter">
-        {GENRE_FILTERS.map(f => (
+        {genres.map(f => (
           <button
             key={f}
             role="tab"
@@ -35,15 +40,16 @@ export default function MusicLibrary() {
         ))}
       </div>
 
+      <label>Sort songs<select value={sort} onChange={e => setSort(e.target.value)}><option value="newest">Newest</option><option value="title">Title</option><option value="artist">Artist</option></select></label>
       {hasTracks ? (
         <div className="v2-premium-grid">
-          {tracks.map((track, i) => (
-            <div
+          {filtered.map((track, i) => (
+            <TiltCard
               key={track.id}
               className="v2-premium-card"
-              onClick={() => playItem(track, tracks, i)}
+              onClick={() => playItem(track, filtered, i)}
               role="button" tabIndex={0}
-              onKeyDown={e => e.key === 'Enter' && playItem(track, tracks, i)}
+              onKeyDown={e => e.key === 'Enter' && playItem(track, filtered, i)}
             >
               <div className="v2-card-artwork">
                 <img
@@ -61,7 +67,8 @@ export default function MusicLibrary() {
                 <strong>{track.title}</strong>
                 <span>{track.artist}</span>
               </div>
-            </div>
+              <TrackActions item={track} />
+            </TiltCard>
           ))}
         </div>
       ) : (

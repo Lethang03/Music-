@@ -17,32 +17,32 @@ export default function LandingPage({ onShowAuth }) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
           </div>
           <div className="v2-brand-text">
-            <strong>Podcast Vault</strong>
-            <span>PREMIUM STREAMING</span>
+            <strong>SoundVerse</strong>
+            <span>MUSIC & PODCASTS</span>
           </div>
         </div>
         <div className="v2-header-actions">
           <button className="v2-btn-secondary" onClick={onShowAuth}>Log In</button>
-          <button className="v2-btn-primary" onClick={onShowAuth}>Sign Up</button>
+          <button className="v2-btn-primary" onClick={() => onShowAuth('register')}>Sign Up</button>
         </div>
       </header>
 
       <main className="v2-landing-hero">
         <div className="v2-hero-content">
-          <div className="v2-hero-badge">Welcome to Version 2.0</div>
+          <div className="v2-hero-badge">Welcome to SoundVerse</div>
           <h1>
             Immerse in the sound.<br />
             <span className="v2-hero-highlight">Elevate your experience.</span>
           </h1>
           <p>
             The premium destination for your favorite music and podcasts. 
-            High-fidelity audio, seamless cross-device playback, and a beautiful cinematic interface designed just for you.
+            Build your library, discover stories, and pick up where you left off.
           </p>
           <div className="v2-hero-cta">
             <button className="v2-btn-primary" style={{ padding: '16px 32px', fontSize: '1.125rem' }} onClick={onShowAuth}>
               Start Listening Now
             </button>
-            <p className="v2-hero-subtext">No credit card required. Free forever.</p>
+            <p className="v2-hero-subtext">Create an account to start listening.</p>
           </div>
         </div>
 
@@ -50,14 +50,14 @@ export default function LandingPage({ onShowAuth }) {
           <div className="v2-floating-player v2-glass">
             <div className="v2-fp-artwork">
               <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&q=80&w=500" alt="Artwork" />
-              <div className="v2-fp-play-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg></div>
+              <div className="v2-fp-play-btn" role="button" tabIndex={0} aria-label="Start listening" onClick={onShowAuth} onKeyDown={e => e.key === 'Enter' && onShowAuth()}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg></div>
             </div>
             <div className="v2-fp-info">
-              <div className="v2-fp-title">Midnight Synth</div>
-              <div className="v2-fp-artist">The Weeknd</div>
+              <div className="v2-fp-title">Your next favorite</div>
+              <div className="v2-fp-artist">Music and podcasts</div>
               <div className="v2-fp-waveform">
                 {[...Array(24)].map((_, i) => (
-                  <div key={i} className="v2-bar" style={{ height: `${Math.random() * 100}%`, animationDelay: `${i * 50}ms`}}></div>
+                  <div key={i} className="v2-bar" style={{ height: `${25 + (i * 17) % 75}%`, animationDelay: `${i * 50}ms`}}></div>
                 ))}
               </div>
             </div>

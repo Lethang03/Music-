@@ -1,0 +1,1 @@
+﻿import fs from 'node:fs';const p='audit/check-database.mjs';let s=fs.readFileSync(p,'utf8').replace('} finally { await db.close() }', "} catch (error) { console.error('Database check failed:', error.message, error.detail || '', 'position:', error.position || ''); process.exitCode = 1 } finally { await db.close() }");fs.writeFileSync(p,s)

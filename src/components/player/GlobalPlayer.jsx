@@ -1,10 +1,15 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import {
   Play, Pause, SkipForward, SkipBack,
   Volume2, VolumeX, ListMusic, Shuffle, Repeat, Repeat1,
   Heart, Maximize2, ChevronDown, MoreHorizontal, X
 } from 'lucide-react'
+import { useDialog } from '../../lib/useDialog'
+import TrackActions from '../TrackActions'
+import { useLibrary } from '../../contexts/LibraryContext'
+import { mediaKey } from '../../lib/storage'
 import { useAudio } from '../../contexts/AudioContext'
+import TiltCard from '../ui/TiltCard'
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 function formatTime(secs) {
@@ -19,14 +24,19 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
   currentTime, duration, seek, volume, setVolume,
   handleNext, handlePrev, shuffle, setShuffle, repeat, setRepeat, queue, currentIndex }) {
 
+  const { setCurrentIndex, removeFromQueue, reorderQueue } = useAudio()
+  const { favorites, toggleFavorite } = useLibrary()
+  const liked = favorites.some(x => mediaKey(x) === mediaKey(activeItem))
   const [activeTab, setActiveTab] = useState('queue')
+  const dialogRef = useRef(null)
+  useDialog(dialogRef, onClose)
   const artworkUrl = activeItem?.image_url || activeItem?.cover_url || activeItem?.image
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
-  const repeatIcon = repeat === 'one' ? Repeat1 : Repeat
+  const RepeatIcon = repeat === 'one' ? Repeat1 : Repeat
 
   return (
-    <div className="v2-np-fullscreen">
+    <div ref={dialogRef} className="v2-np-fullscreen" role="dialog" aria-label="Now playing" aria-modal="true">
       {/* Blurred background — atmospheric only, z-index: 0 */}
       <div
         className="v2-np-blur-bg"
@@ -44,27 +54,37 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
             <ChevronDown size={24} />
           </button>
           <div className="v2-np-title-info">
-            <span className="v2-np-context-label">NOW PLAYING</span>
+            <span className="v2-np-context-label">
+              {isPlaying && (
+                <span className="v2-mini-visualizer">
+                  <span className="v2-bar"></span>
+                  <span className="v2-bar"></span>
+                  <span className="v2-bar"></span>
+                </span>
+              )}
+              NOW PLAYING
+            </span>
           </div>
-          <button className="v2-icon-btn" title="More options">
-            <MoreHorizontal size={20} />
-          </button>
+          <TrackActions item={activeItem} />
         </header>
 
         {/* Main body: artwork + controls on left, panel on right */}
         <div className="v2-np-body">
           {/* Left/Center: artwork + controls */}
           <div className="v2-np-main">
-            <div className="v2-np-artwork-wrap">
+            <TiltCard className={`v2-np-artwork-wrap ${isPlaying ? 'is-playing' : ''}`}>
+              <div className="v2-vinyl-disc-container">
+                <div className="v2-vinyl-disc" />
+              </div>
               <img src={artworkUrl} alt={activeItem?.title ?? ''} className="v2-np-artwork-img" />
-            </div>
+            </TiltCard>
 
             <div className="v2-np-meta">
               <div className="v2-np-meta-text">
                 <h2 className="v2-np-track-title">{activeItem?.title}</h2>
                 <p  className="v2-np-track-artist">{activeItem?.artist || activeItem?.author}</p>
               </div>
-              <button className="v2-icon-btn" title="Like">
+              <button className="v2-icon-btn" title={liked ? 'Remove favorite' : 'Favorite'} aria-pressed={liked} onClick={() => toggleFavorite(activeItem)}>
                 <Heart size={20} />
               </button>
             </div>
@@ -74,7 +94,7 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
               <span className="v2-np-time">{formatTime(currentTime)}</span>
               <div
                 className="v2-np-seek-bar"
-                role="slider"
+                role="slider" tabIndex={0} aria-label="Playback position" onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); seek(currentTime + (e.key === 'ArrowRight' ? 5 : -5)) } }}
                 aria-valuenow={progress}
                 aria-valuemin={0}
                 aria-valuemax={100}
@@ -118,7 +138,7 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
                 onClick={() => setRepeat(r => r === 'none' ? 'all' : r === 'all' ? 'one' : 'none')}
                 title={`Repeat: ${repeat}`}
               >
-                <repeatIcon size={20} />
+                <RepeatIcon size={20} />
               </button>
             </div>
 
@@ -161,10 +181,16 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
                         key={`${item.id}-${idx}`}
                         className={`v2-np-queue-item ${idx === currentIndex ? 'active' : ''}`}
                       >
+                        <button aria-label={`Play ${item.title}`} onClick={() => setCurrentIndex(idx)}><Play size={16} /></button>
+                        <button aria-label={`Remove ${item.title} from queue`} onClick={() => removeFromQueue(idx)}><X size={16} /></button>
                         <img src={art} alt="" className="v2-np-queue-art" />
                         <div className="v2-np-queue-meta">
                           <strong>{item.title}</strong>
                           <small>{item.artist || item.author}</small>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginRight: 8 }}>
+                          <button disabled={idx === 0} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 10 }} onClick={() => reorderQueue?.(idx, idx - 1)}>▲</button>
+                          <button disabled={idx === queue.length - 1} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 10 }} onClick={() => reorderQueue?.(idx, idx + 1)}>▼</button>
                         </div>
                         {idx === currentIndex && (
                           <span className="v2-np-playing-dot" aria-label="Now playing" />
@@ -181,7 +207,7 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
               ) : (
                 <div className="v2-np-lyrics">
                   <p style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '48px 0' }}>
-                    No lyrics available
+                    {activeItem?.lyrics || 'No lyrics available for this item.'}
                   </p>
                 </div>
               )}
@@ -193,14 +219,21 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
       <style>{`
         /* ── Now Playing fullscreen ── */
         .v2-np-fullscreen {
+          background: #0B0B13;
           position: fixed;
           /* Respect sidebar and topbar on desktop */
           top: var(--topbar-height);
           left: var(--sidebar-width);
           right: 0;
           bottom: var(--player-height);
-          z-index: 40;
+          z-index: 70;
           overflow: hidden;
+          animation: v2-np-slide-up var(--transition-cinematic) forwards;
+        }
+
+        @keyframes v2-np-slide-up {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
 
         /* Blurred background — purely atmospheric */
@@ -252,6 +285,30 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
           letter-spacing: 0.12em;
           color: var(--text-secondary);
           font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .v2-mini-visualizer {
+          display: flex;
+          align-items: flex-end;
+          gap: 2px;
+          height: 12px;
+        }
+        .v2-mini-visualizer .v2-bar {
+          width: 3px;
+          background: var(--accent-primary);
+          border-radius: 1px;
+          animation: v2-vis-bounce 0.5s ease infinite alternate;
+        }
+        .v2-mini-visualizer .v2-bar:nth-child(2) { animation-delay: 0.2s; animation-duration: 0.4s; }
+        .v2-mini-visualizer .v2-bar:nth-child(3) { animation-delay: 0.4s; animation-duration: 0.6s; }
+        
+        @keyframes v2-vis-bounce {
+          0% { height: 3px; }
+          100% { height: 12px; }
         }
 
         /* Body */
@@ -266,7 +323,7 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
 
         /* Left: artwork + playback */
         .v2-np-main {
-          flex: 1;
+          flex: 1 0 auto;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -277,16 +334,70 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
 
         .v2-np-artwork-wrap {
           width: 100%;
-          max-width: 420px;
+          max-width: min(38vh, 420px);
           aspect-ratio: 1;
-          border-radius: 20px;
-          overflow: hidden;
-          box-shadow: 0 32px 80px rgba(0,0,0,0.7);
-          flex-shrink: 1;
+          /* Removed overflow: hidden so vinyl can slide out */
+          flex-shrink: 0;
+          position: relative;
         }
         .v2-np-artwork-img {
           width: 100%; height: 100%;
           object-fit: cover;
+          border-radius: 20px;
+          box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+          position: relative;
+          z-index: 2;
+        }
+
+        /* Vinyl Disc */
+        .v2-vinyl-disc-container {
+          position: absolute;
+          top: 2%; bottom: 2%; right: 0;
+          aspect-ratio: 1;
+          z-index: 1;
+          transform: translateX(0);
+          transition: transform var(--transition-cinematic);
+          border-radius: 50%;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        .v2-np-artwork-wrap.is-playing .v2-vinyl-disc-container {
+          transform: translateX(45%);
+        }
+        .v2-vinyl-disc {
+          width: 100%; height: 100%;
+          border-radius: 50%;
+          background: 
+            repeating-radial-gradient(
+              #111,
+              #111 4px,
+              #1a1a1a 5px,
+              #111 6px
+            );
+          animation: v2-vinyl-spin 4s linear infinite;
+          animation-play-state: paused;
+          position: relative;
+        }
+        .v2-vinyl-disc::after {
+          content: '';
+          position: absolute;
+          inset: 38%;
+          background: var(--accent-gradient);
+          border-radius: 50%;
+          box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+        .v2-vinyl-disc::before {
+          content: '';
+          position: absolute;
+          inset: 48%;
+          background: #111;
+          border-radius: 50%;
+          z-index: 2;
+        }
+        .v2-np-artwork-wrap.is-playing .v2-vinyl-disc {
+          animation-play-state: running;
+        }
+        @keyframes v2-vinyl-spin {
+          100% { transform: rotate(360deg); }
         }
 
         .v2-np-meta {
@@ -380,12 +491,15 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
         .v2-np-panel {
           width: 340px;
           flex-shrink: 0;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.06);
+          background: rgba(255, 255, 255, 0.02);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 20px;
           display: flex;
           flex-direction: column;
           overflow: hidden;
+          box-shadow: inset 0 0 40px rgba(255,255,255,0.01), 0 16px 40px rgba(0,0,0,0.5);
         }
         .v2-np-tabs {
           display: flex; gap: 4px;
@@ -403,6 +517,7 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
         .v2-np-tab.active {
           color: var(--text-primary);
           border-bottom-color: var(--accent-primary);
+          text-shadow: 0 0 12px rgba(255,255,255,0.2);
         }
         .v2-np-panel-body {
           flex: 1; overflow-y: auto; padding: 16px;
@@ -466,7 +581,7 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
         @media (max-width: 768px) {
           .v2-np-fullscreen {
             top: 0;
-            bottom: var(--mobile-nav-height);
+            bottom: calc(var(--mobile-nav-height) + var(--player-height));
           }
           .v2-np-topbar { padding: 12px 16px; }
           .v2-np-body { padding: 0 16px 16px; gap: 24px; }
@@ -481,7 +596,7 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
 // ─── Mini Global Player bar ─────────────────────────────────────────────────
 export default function GlobalPlayer() {
   const {
-    activeItem, isPlaying, togglePlay,
+    activeItem, isPlaying, togglePlay, error,
     volume, setVolume,
     currentTime, duration, seek,
     queue, currentIndex,
@@ -489,6 +604,8 @@ export default function GlobalPlayer() {
     handleNext, handlePrev,
   } = useAudio()
 
+  const { favorites, toggleFavorite } = useLibrary()
+  const liked = favorites.some(x => mediaKey(x) === mediaKey(activeItem))
   const [showNowPlaying, setShowNowPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
   const [prevVolume, setPrevVolume] = useState(1)
@@ -497,7 +614,7 @@ export default function GlobalPlayer() {
   const progress   = duration > 0 ? (currentTime / duration) * 100 : 0
 
   const toggleMute = useCallback(() => {
-    if (muted) {
+    if (volume === 0) {
       setVolume(prevVolume || 0.8)
       setMuted(false)
     } else {
@@ -535,6 +652,7 @@ export default function GlobalPlayer() {
 
       {/* Mini player bar */}
       <div className="v2-player-bar">
+        {error && <div role="alert" className="v2-player-error">{error}</div>}
         {/* Progress bar at very top of player */}
         <div
           className="v2-player-progress-strip"
@@ -564,7 +682,7 @@ export default function GlobalPlayer() {
               <strong>{activeItem.title}</strong>
               <small>{activeItem.artist || activeItem.author}</small>
             </div>
-            <button className="v2-icon-btn" title="Like" style={{ flexShrink: 0 }}>
+            <button className="v2-icon-btn" title={liked ? 'Remove favorite' : 'Favorite'} aria-pressed={liked} onClick={() => toggleFavorite(activeItem)} style={{ flexShrink: 0 }}>
               <Heart size={16} />
             </button>
           </div>
@@ -602,7 +720,7 @@ export default function GlobalPlayer() {
             <div className="v2-player-time-row">
               <span className="v2-player-time">{formatTime(currentTime)}</span>
               <div
-                className="v2-player-seek"
+                className="v2-player-seek" role="slider" tabIndex={0} aria-label="Playback position" aria-valuemin={0} aria-valuemax={duration} aria-valuenow={currentTime} onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); seek(currentTime + (e.key === 'ArrowRight' ? 5 : -5)) } }}
                 onClick={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect()
                   seek(((e.clientX - rect.left) / rect.width) * duration)
@@ -624,15 +742,15 @@ export default function GlobalPlayer() {
               <ListMusic size={18} />
             </button>
             <div className="v2-volume-row">
-              <button className="v2-icon-btn" onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'}>
-                {(muted || volume === 0)
+              <button className="v2-icon-btn" onClick={toggleMute} title={volume === 0 ? 'Unmute' : 'Mute'}>
+                {(volume === 0)
                   ? <VolumeX size={18} />
                   : <Volume2  size={18} />
                 }
               </button>
               <input
                 type="range" min={0} max={1} step={0.01}
-                value={muted ? 0 : volume}
+                value={volume}
                 onChange={e => { setMuted(false); setVolume(parseFloat(e.target.value)) }}
                 className="v2-volume-slider"
                 aria-label="Volume"

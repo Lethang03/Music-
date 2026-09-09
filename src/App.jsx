@@ -64,7 +64,7 @@ class ErrorBoundary extends React.Component {
 // ── Routes inside AppShell ──────────────────────────────────────────────────
 function AdminRoute() {
   const { isAdmin } = useAuth()
-  return isAdmin ? <AdminPage /> : <div className="v2-page"><div className="v2-status-banner" role="alert">You do not have access to the Admin Dashboard.</div></div>
+  return isAdmin ? <AdminPage /> : <div className="v2-page"><div className="v2-status-banner" role="alert">You do not have access to administration.</div></div>
 }
 function AudioBridge({ children }) {
   const { session } = useAuth()

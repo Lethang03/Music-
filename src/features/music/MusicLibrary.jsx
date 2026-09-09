@@ -1,120 +1,27 @@
-import React, { useState } from 'react'
-import { Play, ChevronRight } from 'lucide-react'
+import React, { useMemo, useState } from 'react'
+import { Grid2X2, List, Play, Search } from 'lucide-react'
 import { useLibrary } from '../../contexts/LibraryContext'
 import TrackActions from '../../components/TrackActions'
 import { useAudio } from '../../contexts/AudioContext'
 import TiltCard from '../../components/ui/TiltCard'
 
-const GENRE_FILTERS = ['Tất cả', 'Pop', 'Rock', 'Indie', 'Lofi', 'EDM', 'R&B', 'Hip Hop', 'Acoustic', 'V-Pop']
+const formatDuration = value => { const seconds = Number(value) || 0; return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}` }
 
 export default function MusicLibrary() {
   const { tracks, loading } = useLibrary()
-  const { playItem } = useAudio()
+  const { playItem, activeItem } = useAudio()
   const [activeFilter, setActiveFilter] = useState('All')
   const [sort, setSort] = useState('newest')
-  const genres = ['All', ...new Set(tracks.map(t => t.genre).filter(Boolean))]
-  const filtered = tracks.filter(t => activeFilter === 'All' || t.genre === activeFilter).sort((a, b) => sort === 'title' ? (a.title || '').localeCompare(b.title || '') : sort === 'artist' ? (a.artist || '').localeCompare(b.artist || '') : (b.created_at || '').localeCompare(a.created_at || ''))
-
-  if (loading) return <div className="v2-page-loading">Loading Music...</div>
-
-  const hasTracks = filtered.length > 0
-
-  return (
-    <div className="v2-page v2-animate-fade">
-      <header className="v2-page-hdr">
-        <h1>Khám phá âm nhạc</h1>
-        <p>Những bài hát đang chờ bạn khám phá.</p>
-      </header>
-
-      <div className="v2-filter-row" role="tablist" aria-label="Genre filter">
-        {genres.map(f => (
-          <button
-            key={f}
-            role="tab"
-            aria-selected={activeFilter === f}
-            className={`v2-filter-pill ${activeFilter === f ? 'active' : ''}`}
-            onClick={() => setActiveFilter(f)}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      <label>Sort songs<select value={sort} onChange={e => setSort(e.target.value)}><option value="newest">Newest</option><option value="title">Title</option><option value="artist">Artist</option></select></label>
-      {hasTracks ? (
-        <div className="v2-premium-grid">
-          {filtered.map((track, i) => (
-            <TiltCard
-              key={track.id}
-              className="v2-premium-card"
-              onClick={() => playItem(track, filtered, i)}
-              role="button" tabIndex={0}
-              onKeyDown={e => e.key === 'Enter' && playItem(track, filtered, i)}
-            >
-              <div className="v2-card-artwork">
-                <img
-                  src={track.image_url || track.cover_url}
-                  alt={track.title}
-                  loading="lazy"
-                />
-                <div className="v2-card-overlay">
-                  <button className="v2-card-play-btn" tabIndex={-1}>
-                    <Play size={22} fill="currentColor" style={{ marginLeft: '2px' }} />
-                  </button>
-                </div>
-              </div>
-              <div className="v2-card-meta">
-                <strong>{track.title}</strong>
-                <span>{track.artist}</span>
-              </div>
-              <TrackActions item={track} />
-            </TiltCard>
-          ))}
-        </div>
-      ) : (
-        <div className="v2-music-empty">
-          <div className="v2-music-empty-icon">🎸</div>
-          <h2>No tracks yet</h2>
-          <p>Tracks published by an admin will appear here.</p>
-        </div>
-      )}
-
-      <style>{`
-        .v2-page { display: flex; flex-direction: column; gap: 32px; }
-        .v2-page-hdr h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
-        .v2-page-hdr p  { color: var(--text-secondary); font-size: 1rem; }
-
-        .v2-filter-row {
-          display: flex; gap: 10px; overflow-x: auto;
-          padding-bottom: 4px;
-          scrollbar-width: none;
-        }
-        .v2-filter-row::-webkit-scrollbar { display: none; }
-
-        .v2-filter-pill {
-          white-space: nowrap; padding: 8px 20px;
-          border-radius: var(--radius-full);
-          background: transparent;
-          border: 1px solid rgba(255,255,255,0.1);
-          color: var(--text-secondary);
-          font-weight: 600; font-size: 0.875rem;
-          cursor: pointer; transition: all 0.15s;
-          flex-shrink: 0;
-        }
-        .v2-filter-pill:hover { border-color: rgba(255,255,255,0.25); color: var(--text-primary); }
-        .v2-filter-pill.active {
-          background: var(--accent-gradient);
-          border-color: transparent; color: white;
-        }
-
-        .v2-music-empty {
-          display: flex; flex-direction: column; align-items: center;
-          gap: 14px; min-height: 40vh; justify-content: center;
-          text-align: center; color: var(--text-secondary);
-        }
-        .v2-music-empty-icon { font-size: 3.5rem; }
-        .v2-music-empty h2 { font-size: 1.5rem; color: var(--text-primary); }
-      `}</style>
-    </div>
-  )
+  const [query, setQuery] = useState('')
+  const [view, setView] = useState('grid')
+  const genres = useMemo(() => ['All', ...new Set(tracks.map(t => t.genre).filter(Boolean))], [tracks])
+  const filtered = useMemo(() => tracks.filter(t => activeFilter === 'All' || t.genre === activeFilter).filter(t => `${t.title || ''} ${t.artist || ''} ${t.album || ''}`.toLowerCase().includes(query.trim().toLowerCase())).sort((a, b) => sort === 'title' ? (a.title || '').localeCompare(b.title || '') : sort === 'artist' ? (a.artist || '').localeCompare(b.artist || '') : (b.created_at || '').localeCompare(a.created_at || '')), [tracks, activeFilter, query, sort])
+  if (loading) return <div className="v2-page-loading">Loading music…</div>
+  return <div className="v2-page v2-animate-fade music-library">
+    <header className="v2-page-hdr"><p className="eyebrow">THE SOUNDVERSE CATALOG</p><h1>Discover music</h1><p>Find a new favorite, or return to the songs you already love.</p></header>
+    <div className="music-toolbar"><label className="music-search"><Search size={18}/><input aria-label="Search music" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search songs, artists, albums" /></label><label className="music-sort">Sort <select value={sort} onChange={e => setSort(e.target.value)}><option value="newest">Newest</option><option value="title">Title</option><option value="artist">Artist</option></select></label><div className="view-toggle" aria-label="Music view"><button aria-label="Grid view" aria-pressed={view === 'grid'} onClick={() => setView('grid')}><Grid2X2 size={18}/></button><button aria-label="List view" aria-pressed={view === 'list'} onClick={() => setView('list')}><List size={19}/></button></div></div>
+    <div className="v2-filter-row" role="tablist" aria-label="Genre filter">{genres.map(f => <button key={f} role="tab" aria-selected={activeFilter === f} className={`v2-filter-pill ${activeFilter === f ? 'active' : ''}`} onClick={() => setActiveFilter(f)}>{f}</button>)}</div>
+    {filtered.length ? view === 'grid' ? <div className="v2-premium-grid">{filtered.map((track, i) => <TiltCard key={track.id} className={`v2-premium-card ${activeItem?.id === track.id ? 'is-playing' : ''}`} onClick={() => playItem(track, filtered, i)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && playItem(track, filtered, i)}><div className="v2-card-artwork"><img src={track.image_url || track.cover_url} alt={track.title} loading="lazy"/><div className="v2-card-overlay"><span className="v2-card-play-btn"><Play size={22} fill="currentColor"/></span></div></div><div className="v2-card-meta"><strong>{track.title}</strong><span>{track.artist}</span></div><TrackActions item={track}/></TiltCard>)}</div> : <div className="music-list"><div className="music-list-head"><span>#</span><span>Title</span><span>Album</span><span>Duration</span><span></span></div>{filtered.map((track, i) => <div key={track.id} className={`music-list-row ${activeItem?.id === track.id ? 'is-playing' : ''}`}><button className="track-number" onClick={() => playItem(track, filtered, i)} aria-label={`Play ${track.title}`}><span>{String(i + 1).padStart(2, '0')}</span><Play size={15} fill="currentColor"/></button><button className="music-title-cell" onClick={() => playItem(track, filtered, i)}><img src={track.image_url || track.cover_url} alt=""/><span><strong>{track.title}</strong><small>{track.artist}</small></span></button><span className="album-cell">{track.album || 'Single'}</span><span>{formatDuration(track.duration)}</span><TrackActions item={track}/></div>)}</div> : <div className="v2-music-empty"><h2>No tracks found</h2><p>Try another search or genre.</p></div>}
+    <style>{`.music-library{gap:24px}.v2-page-hdr h1{font-size:clamp(2.2rem,5vw,4rem);margin:2px 0}.v2-page-hdr p{color:var(--text-secondary)}.eyebrow{font-size:.72rem;font-weight:800;letter-spacing:.18em;color:#d591ff!important}.music-toolbar{display:flex;gap:12px;align-items:center}.music-search{flex:1;display:flex;align-items:center;gap:10px;padding:0 14px;height:44px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.045)}.music-search input{border:0;background:none;color:inherit;outline:0;width:100%}.music-sort{display:flex;align-items:center;gap:8px;color:var(--text-secondary);font-size:.85rem}.music-sort select{height:44px;border-radius:12px;background:#171421;color:white;border:1px solid rgba(255,255,255,.1);padding:0 12px}.view-toggle{display:flex;padding:3px;background:rgba(255,255,255,.06);border-radius:12px}.view-toggle button{display:grid;place-items:center;width:38px;height:38px;border:0;border-radius:9px;background:none;color:var(--text-secondary)}.view-toggle button[aria-pressed=true]{background:rgba(184,51,255,.28);color:white}.v2-filter-row{display:flex;gap:8px;overflow:auto}.v2-filter-pill{white-space:nowrap;padding:10px 20px;border-radius:99px;background:transparent;border:1px solid rgba(255,255,255,.1);color:var(--text-secondary)}.v2-filter-pill.active{background:var(--accent-gradient);color:white;border-color:transparent}.v2-premium-card.is-playing,.music-list-row.is-playing{outline:1px solid #d14fff;background:rgba(184,51,255,.1)}.music-list{border:1px solid rgba(255,255,255,.08);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.025)}.music-list-head,.music-list-row{display:grid;grid-template-columns:48px minmax(220px,2fr) minmax(120px,1fr) 90px 44px;align-items:center;gap:12px;padding:10px 18px}.music-list-head{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-secondary);border-bottom:1px solid rgba(255,255,255,.08)}.music-list-row{min-height:68px;border-bottom:1px solid rgba(255,255,255,.045);transition:.15s}.music-list-row:hover{background:rgba(255,255,255,.055)}.music-list-row:last-child{border:0}.track-number,.music-title-cell{border:0;background:none;color:inherit;text-align:left}.track-number svg{display:none}.music-list-row:hover .track-number span{display:none}.music-list-row:hover .track-number svg{display:block}.music-title-cell{display:flex;align-items:center;gap:12px;min-width:0}.music-title-cell img{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#211d2a}.music-title-cell span{display:flex;flex-direction:column;min-width:0}.music-title-cell strong,.music-title-cell small,.album-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.music-title-cell small,.album-cell{color:var(--text-secondary)}.v2-music-empty{text-align:center;padding:72px;color:var(--text-secondary)}@media(max-width:700px){.music-toolbar{flex-wrap:wrap}.music-search{flex-basis:100%}.album-cell,.music-list-head span:nth-child(3){display:none}.music-list-head,.music-list-row{grid-template-columns:32px minmax(0,1fr) 58px 36px;padding:9px 10px;gap:8px}.v2-page-hdr h1{font-size:2.25rem}}`}</style>
+  </div>
 }

@@ -10,10 +10,15 @@ export default function AdminUsers() {
 
   const loadUsers = async () => {
     setLoading(true)
-    const { data, error } = await supabase.from('profiles').select('id, display_name, username, avatar_url, role, created_at').order('created_at', { ascending: false })
-    if (error) setError(error.message)
-    else setUsers(data || [])
-    setLoading(false)
+    try {
+      const { data, error } = await supabase.from('profiles').select('id, display_name, username, avatar_url, role, created_at').order('created_at', { ascending: false })
+      if (error) throw error
+      setUsers(data || [])
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { loadUsers() }, [])

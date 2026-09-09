@@ -1,0 +1,16 @@
+{
+  "name": "music-gg-audio-worker",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node worker.js",
+    "worker": "node worker.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "dotenv": "^16.4.7",
+    "ffmpeg-static": "^5.2.0",
+    "yt-dlp-exec": "^1.0.2"
+  }
+}

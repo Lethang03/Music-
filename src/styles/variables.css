@@ -61,7 +61,8 @@
 
   /* Heights */
   --topbar-height: 80px;
-  --player-height: 104px;
+  --player-height: 88px;
+  --player-height-mobile: 68px;
   --mobile-nav-height: 72px;
   --sidebar-width: 280px;
 }

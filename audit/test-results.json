@@ -3,7 +3,11 @@
     "argv": [
       "C:\\Program Files\\nodejs\\node.exe",
       "E:\\Music GG\\node_modules\\@playwright\\test\\cli.js",
-      "test"
+      "test",
+      "tests/v2.spec.js",
+      "-g",
+      "natural endings",
+      "--workers=1"
     ],
     "configFile": "E:\\Music GG\\playwright.config.js",
     "rootDir": "E:/Music GG/tests",
@@ -17,7 +21,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 2
+      "actualWorkers": 1
     },
     "preserveOutput": "always",
     "projects": [
@@ -26,7 +30,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 1
         },
         "id": "chromium",
         "name": "chromium",
@@ -66,296 +70,24 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.63.0",
-    "workers": 2,
-    "webServer": null
+    "workers": 1,
+    "webServer": {
+      "command": "node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 3100 --strictPort",
+      "url": "http://127.0.0.1:3100",
+      "reuseExistingServer": true,
+      "env": {
+        "VITE_SUPABASE_URL": "https://soundverse-test.supabase.co",
+        "VITE_SUPABASE_ANON_KEY": "sb_publishable_fixture"
+      }
+    }
   },
   "suites": [
-    {
-      "title": "audit.spec.js",
-      "file": "audit.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "search includes tracks beyond the default Supabase row limit",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 10403,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:00.356Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "cb3620ddbaaaeb17db70-5836c04bc462d0bd5184",
-          "file": "audit.spec.js",
-          "line": 4,
-          "column": 1
-        },
-        {
-          "title": "cloud activity and new favorites sync together without server-only columns",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 10484,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:00.372Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "cb3620ddbaaaeb17db70-d5f0c1eef660be9cf718",
-          "file": "audit.spec.js",
-          "line": 11,
-          "column": 1
-        },
-        {
-          "title": "missing profile is recovered using allowed fields and survives refresh",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 10379,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:11.620Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "cb3620ddbaaaeb17db70-ac8184d9c5d9486748aa",
-          "file": "audit.spec.js",
-          "line": 27,
-          "column": 1
-        },
-        {
-          "title": "profile write failure is visible and Retry profile actually recovers",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 10102,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:11.700Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "cb3620ddbaaaeb17db70-c9e0f0b881b2214892d3",
-          "file": "audit.spec.js",
-          "line": 41,
-          "column": 1
-        },
-        {
-          "title": "logout removes persisted player and isolates a second account",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 11937,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:21.826Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "cb3620ddbaaaeb17db70-f298bfba7af08522d6a1",
-          "file": "audit.spec.js",
-          "line": 59,
-          "column": 1
-        },
-        {
-          "title": "mobile podcast navigation, seasons, playback and refresh 390x844",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 12910,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:22.022Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "cb3620ddbaaaeb17db70-76a4ca93a6efea7f7438",
-          "file": "audit.spec.js",
-          "line": 85,
-          "column": 3
-        },
-        {
-          "title": "mobile podcast navigation, seasons, playback and refresh 375x812",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 2827,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:33.791Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "cb3620ddbaaaeb17db70-0ba7d86dcf59a0c7ae42",
-          "file": "audit.spec.js",
-          "line": 85,
-          "column": 3
-        }
-      ]
-    },
     {
       "title": "v2.spec.js",
       "file": "v2.spec.js",
       "column": 0,
       "line": 0,
       "specs": [
-        {
-          "title": "landing, login, registration confirmation and authenticated routes",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2368,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:35.000Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-0c5336f9ce2f3feb8f76",
-          "file": "v2.spec.js",
-          "line": 4,
-          "column": 1
-        },
         {
           "title": "natural endings: shuffle=false, repeat=none",
           "ok": true,
@@ -369,15 +101,15 @@
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5381,
+                  "duration": 6692,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-07T18:24:36.683Z",
+                  "startTime": "2026-09-09T10:35:36.172Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -406,12 +138,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5424,
+                  "duration": 5467,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-07T18:24:37.389Z",
+                  "startTime": "2026-09-09T10:35:43.369Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -437,15 +169,15 @@
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5866,
+                  "duration": 5729,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-07T18:24:42.079Z",
+                  "startTime": "2026-09-09T10:35:48.860Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -474,12 +206,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5351,
+                  "duration": 5629,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-07T18:24:42.837Z",
+                  "startTime": "2026-09-09T10:35:54.613Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -505,15 +237,15 @@
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5341,
+                  "duration": 5667,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-07T18:24:47.959Z",
+                  "startTime": "2026-09-09T10:36:00.268Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -542,12 +274,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6041,
+                  "duration": 6218,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-07T18:24:48.217Z",
+                  "startTime": "2026-09-09T10:36:05.966Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -559,763 +291,15 @@
           "file": "v2.spec.js",
           "line": 25,
           "column": 3
-        },
-        {
-          "title": "repeat-all restarts a one-item queue, duplicates advance and restoration stays paused",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 4803,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:53.321Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-af0c51ae205dadd942ea",
-          "file": "v2.spec.js",
-          "line": 39,
-          "column": 1
-        },
-        {
-          "title": "queue removal, seek, pause, volume and refresh persistence",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 4782,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:54.282Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-916e8d3ba409c2a76660",
-          "file": "v2.spec.js",
-          "line": 52,
-          "column": 1
-        },
-        {
-          "title": "playlist CRUD, song ordering and profile persist through refresh",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 7992,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:58.151Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-1af24153868cb923495c",
-          "file": "v2.spec.js",
-          "line": 72,
-          "column": 1
-        },
-        {
-          "title": "settings, filtering, search and podcast pause/resume",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 6606,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:24:59.094Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-5b1f871ba580c91d530a",
-          "file": "v2.spec.js",
-          "line": 104,
-          "column": 1
-        },
-        {
-          "title": "favorites and real history survive refresh; logout clears private UI and audio",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 6848,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:05.729Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-e7cc8cbbfafd26968233",
-          "file": "v2.spec.js",
-          "line": 126,
-          "column": 1
-        },
-        {
-          "title": "catalog failures and admin denial remain visible without crashes",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 2135,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:06.170Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-96b19e44cb950323b2d3",
-          "file": "v2.spec.js",
-          "line": 140,
-          "column": 1
-        },
-        {
-          "title": "responsive 1920x1080",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 7289,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:08.335Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-4176eebe691bc37c6899",
-          "file": "v2.spec.js",
-          "line": 149,
-          "column": 3
-        },
-        {
-          "title": "responsive 1440x900",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 7442,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:12.604Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-7fca6039f70a68f54cf2",
-          "file": "v2.spec.js",
-          "line": 149,
-          "column": 3
-        },
-        {
-          "title": "responsive 1280x800",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 6583,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:15.655Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-371df7d439ac5b9f1d18",
-          "file": "v2.spec.js",
-          "line": 149,
-          "column": 3
-        },
-        {
-          "title": "responsive 768x1024",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 5838,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:20.077Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-4ee3b563682689982365",
-          "file": "v2.spec.js",
-          "line": 149,
-          "column": 3
-        },
-        {
-          "title": "responsive 430x932",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 5048,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:22.262Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-2d32b1a4b0fa93c988eb",
-          "file": "v2.spec.js",
-          "line": 149,
-          "column": 3
-        },
-        {
-          "title": "responsive 390x844",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 5455,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:25.936Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-93888427e083be894830",
-          "file": "v2.spec.js",
-          "line": 149,
-          "column": 3
-        },
-        {
-          "title": "responsive 375x812",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 4846,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:27.329Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-8830064e2abe628707ee",
-          "file": "v2.spec.js",
-          "line": 149,
-          "column": 3
-        },
-        {
-          "title": "autoplay off stops after a natural ending",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 3265,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:31.412Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-4aa85412788cca8bb312",
-          "file": "v2.spec.js",
-          "line": 167,
-          "column": 1
-        },
-        {
-          "title": "play next overrides shuffle, track menu favorites and add-to-playlist work",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 1881,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:32.194Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-788ef5afe2b7eb81f1b9",
-          "file": "v2.spec.js",
-          "line": 174,
-          "column": 1
-        },
-        {
-          "title": "playback rejection and failed media show recoverable errors",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 1670,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:34.093Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-8c2cbec7c1bc5bc1da88",
-          "file": "v2.spec.js",
-          "line": 186,
-          "column": 1
-        },
-        {
-          "title": "offline activity persists locally and reports cloud failure",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 4130,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:34.695Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-31173f6fb0a4e890adf6",
-          "file": "v2.spec.js",
-          "line": 209,
-          "column": 1
-        },
-        {
-          "title": "corrupt storage does not crash and empty queue stays empty after refresh",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 2069,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:35.783Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-ec6fdaa0b03e78e37856",
-          "file": "v2.spec.js",
-          "line": 222,
-          "column": 1
-        },
-        {
-          "title": "podcast resume restores the saved offset after metadata loads",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 2974,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:37.869Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-36b2e08686d0a909198e",
-          "file": "v2.spec.js",
-          "line": 234,
-          "column": 1
-        },
-        {
-          "title": "admin creates, edits, publishes and deletes catalog content",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 1887,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:38.842Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-ed06cc7122e93e0002a5",
-          "file": "v2.spec.js",
-          "line": 249,
-          "column": 1
-        },
-        {
-          "title": "stale playlist updates show a conflict instead of overwriting",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 993,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:40.752Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-7fa43de1d3c86b3493ea",
-          "file": "v2.spec.js",
-          "line": 268,
-          "column": 1
-        },
-        {
-          "title": "landing and dialogs fit mobile and keyboard focus stays in dialogs",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 1,
-                  "status": "passed",
-                  "duration": 1377,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-09-07T18:25:40.860Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "fe8e25e0817ed2c6ece7-9ac7586b3caca8a97897",
-          "file": "v2.spec.js",
-          "line": 279,
-          "column": 1
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-09-07T18:23:59.278Z",
-    "duration": 103761.57400000001,
-    "expected": 36,
+    "startTime": "2026-09-09T10:35:35.336Z",
+    "duration": 37836.401,
+    "expected": 6,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

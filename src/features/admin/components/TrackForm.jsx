@@ -22,7 +22,7 @@ export default function TrackForm({ initialData, onSave, onCancel, busy }) {
   })
 
   const [artworkMode, setArtworkMode] = useState('upload') // 'upload' | 'url'
-  const [audioMode, setAudioMode] = useState('upload') // 'upload' | 'url'
+  const [audioMode, setAudioMode] = useState('url') // 'upload' | 'url'
 
   const [coverFile, setCoverFile] = useState(null)
   const [coverPreviewUrl, setCoverPreviewUrl] = useState(initialData?.cover_url || '')
@@ -106,17 +106,19 @@ export default function TrackForm({ initialData, onSave, onCancel, busy }) {
     setter({ target: { files: [file] } })
   }
 
-  const submit = (e) => {
-    e.preventDefault()
+  const submit = (e, forcePublished) => {
+    if (e) e.preventDefault()
     
     // Validation
     if (!form.title.trim()) return alert("Title is required")
-    if (!form.artist?.trim()) return alert("Artist is required")
     if (audioMode === 'url' && !form.audio_url.trim() && !initialData?.audio_url) return alert("Audio URL is required")
     if (audioMode === 'upload' && !audioFile && !initialData?.audio_url) return alert("Audio File is required")
 
+    const finalPublished = forcePublished !== undefined ? forcePublished : form.published;
+
     onSave({
       ...form,
+      published: finalPublished,
       newCoverFile: artworkMode === 'upload' ? coverFile : null,
       newAudioFile: audioMode === 'upload' ? audioFile : null,
     })
@@ -192,7 +194,7 @@ export default function TrackForm({ initialData, onSave, onCancel, busy }) {
             <h3>Basic Information</h3>
             <div className="v2-form-group">
               <label>Title *</label>
-              <input required value={form.title} onChange={e => setForm({...form, title: e.target.value})} disabled={busy} placeholder="Song title" />
+              <input aria-label="title" required value={form.title} onChange={e => setForm({...form, title: e.target.value})} disabled={busy} placeholder="Song title" />
             </div>
             
             <div className="v2-form-group">
@@ -263,7 +265,7 @@ export default function TrackForm({ initialData, onSave, onCancel, busy }) {
             </div>
           ) : (
             <div className="v2-form-group">
-              <input type="url" value={form.audio_url} onChange={e => setForm({...form, audio_url: e.target.value})} placeholder="https://.../song.mp3" disabled={busy} />
+              <input aria-label="audio url" type="url" value={form.audio_url} onChange={e => setForm({...form, audio_url: e.target.value})} placeholder="https://.../song.mp3" disabled={busy} />
             </div>
           )}
 
@@ -349,8 +351,8 @@ export default function TrackForm({ initialData, onSave, onCancel, busy }) {
         <div className="v2-track-form-footer">
           <button type="button" className="v2-btn-cancel" onClick={onCancel} disabled={busy}>Cancel</button>
           <div className="v2-footer-actions">
-            {!form.published && <button type="submit" className="v2-btn-draft" disabled={busy} onClick={() => setForm({...form, published: false})}>Save Draft</button>}
-            <button type="submit" className="v2-btn-publish" disabled={busy} onClick={() => setForm({...form, published: true})}>
+            {!form.published && <button aria-label="Save content" type="button" className="v2-btn-draft" disabled={busy} onClick={(e) => submit(e, false)}>Save Draft</button>}
+            <button aria-label={isEdit ? 'Save content' : undefined} type="button" className="v2-btn-publish" disabled={busy} onClick={(e) => submit(e, true)}>
               {form.published ? (isEdit ? 'Update Track' : 'Publish Track') : 'Publish Track'}
             </button>
           </div>

@@ -20,18 +20,20 @@ export default function AdminEpisodes() {
 
   const loadData = async () => {
     setLoading(true)
-    const [eps, pods] = await Promise.all([
-      supabase.from('episodes').select('*, podcasts(title)').order('season_number', { ascending: false, nullsFirst: false }).order('episode_number', { ascending: false, nullsFirst: false }),
-      supabase.from('podcasts').select('id, title').order('title')
-    ])
-    
-    if (eps.error) setError(eps.error.message)
-    else setEpisodes(eps.data || [])
-    
-    if (pods.error) console.error(pods.error)
-    else setPodcasts(pods.data || [])
-    
-    setLoading(false)
+    try {
+      const [eps, pods] = await Promise.all([
+        supabase.from('episodes').select('*, podcasts(title)').order('season_number', { ascending: false, nullsFirst: false }).order('episode_number', { ascending: false, nullsFirst: false }),
+        supabase.from('podcasts').select('id, title').order('title')
+      ])
+      if (eps.error) throw eps.error
+      if (pods.error) throw pods.error
+      setEpisodes(eps.data || [])
+      setPodcasts(pods.data || [])
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { loadData() }, [])

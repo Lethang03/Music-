@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, Music, Radio, ListMusic, Users, ArrowLeft } from 'lucide-react'
+import { LayoutDashboard, Music, Radio, ListMusic, Users, ArrowLeft, UploadCloud } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 
 export default function AdminLayout({ children, activeTab, onTabChange }) {
@@ -9,7 +9,9 @@ export default function AdminLayout({ children, activeTab, onTabChange }) {
   const navs = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'music_tracks', label: 'Music', icon: Music },
+    { id: 'music_import', label: 'Import Music', icon: UploadCloud },
     { id: 'podcasts', label: 'Podcasts', icon: Radio },
+    { id: 'podcast_import', label: 'Import Podcast', icon: UploadCloud },
     { id: 'episodes', label: 'Episodes', icon: ListMusic },
     { id: 'profiles', label: 'Users', icon: Users },
   ]

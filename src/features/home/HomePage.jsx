@@ -7,6 +7,11 @@ import TiltCard from '../../components/ui/TiltCard'
 
 // Stable mini progress width — avoid Math.random() in render (causes StrictMode re-renders)
 
+function TrackShelf({ title, tracks, playItem, onMore }) {
+  if (!tracks.length) return null
+  return <section className="v2-section"><div className="v2-section-hdr"><h2>{title}</h2><button className="v2-text-link" onClick={onMore}>See all <ChevronRight size={14}/></button></div><div className="v2-premium-grid">{tracks.map((track, i) => <TiltCard key={`${title}:${track.id}`} className="v2-premium-card" onClick={() => playItem(track, tracks, i)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && playItem(track, tracks, i)}><div className="v2-card-artwork"><img src={track.image_url || track.cover_url} alt={track.title} loading="lazy"/><div className="v2-card-overlay"><span className="v2-card-play-btn"><Play size={22} fill="currentColor"/></span></div></div><div className="v2-card-meta"><strong>{track.title}</strong><span>{track.artist}</span></div></TiltCard>)}</div></section>
+}
+
 export default function HomePage() {
   const navigate = useNavigate()
   const { tracks, podcasts, loading, history } = useLibrary()
@@ -107,6 +112,13 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {hasTracks && <>
+        <TrackShelf title="Made For You" tracks={tracks.slice(0, 6)} playItem={playItem} onMore={() => navigate('/music')} />
+        <TrackShelf title="Trending Music" tracks={[...tracks].slice(-6).reverse()} playItem={playItem} onMore={() => navigate('/music')} />
+        <TrackShelf title="Recently Added" tracks={[...tracks].sort((a,b) => (b.created_at || '').localeCompare(a.created_at || '')).slice(0, 6)} playItem={playItem} onMore={() => navigate('/music')} />
+        <section className="v2-section"><div className="v2-section-hdr"><h2>Recommended Playlist</h2><button className="v2-text-link" onClick={() => navigate('/library')}>Open library <ChevronRight size={14}/></button></div><button className="v2-home-mix" onClick={() => playItem(tracks[0], tracks, 0)}><span><small>SOUNDVERSE MIX</small><strong>Your daily soundtrack</strong><em>{tracks.slice(0,4).map(t => t.artist).filter(Boolean).join(' · ')}</em></span><Play size={28} fill="currentColor"/></button></section>
+      </>}
 
       {/* Podcasts */}
       {hasPodcasts && (
@@ -269,6 +281,8 @@ export default function HomePage() {
         .v2-card-mini-progress div {
           height: 100%; background: var(--accent-gradient); border-radius: 1px;
         }
+        .v2-home-mix { min-height: 170px; border: 1px solid rgba(255,255,255,.1); border-radius: 22px; padding: 28px; color: white; display:flex; align-items:flex-end; justify-content:space-between; text-align:left; background:radial-gradient(circle at 85% 15%,rgba(255,72,190,.45),transparent 30%),linear-gradient(125deg,#54216e,#171120 60%); box-shadow:0 18px 50px rgba(0,0,0,.25); }
+        .v2-home-mix span { display:flex; flex-direction:column; gap:6px; }.v2-home-mix small { letter-spacing:.16em; font-weight:800; color:#efc8ff }.v2-home-mix strong { font-size:clamp(1.5rem,3vw,2.5rem) }.v2-home-mix em { color:rgba(255,255,255,.65); font-style:normal }
 
         /* Empty state */
         .v2-home-empty {
@@ -292,10 +306,17 @@ export default function HomePage() {
           .v2-home-hero-visual { width: 85%; }
         }
         @media (max-width: 768px) {
-          .v2-page { gap: 36px; }
-          .v2-hero-visual-overlay h3 { font-size: 1.5rem; }
-          .v2-home-hero-visual { width: 100%; }
+          .v2-page { gap: 32px; }
+          .v2-home-hero { min-height: auto; gap: 24px; }
+          .v2-hero-headline { font-size: 2rem; }
+          .v2-home-hero-visual-container { height: 200px; max-height: 200px; margin-top: 16px; }
+          .v2-home-hero-visual { width: 100%; border-radius: 12px; }
+          .v2-home-hero-visual img { border-radius: 12px; }
+          .v2-hero-visual-overlay { border-radius: 12px; padding: 20px; }
+          .v2-hero-visual-overlay h3 { font-size: 1.25rem; }
           .v2-hero-vinyl { display: none; }
+          .v2-home-mix { min-height: 140px; padding: 20px; border-radius: 16px; }
+          .v2-home-mix strong { font-size: 1.5rem; }
         }
       `}</style>
     </div>

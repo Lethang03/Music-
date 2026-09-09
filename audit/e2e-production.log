@@ -1,0 +1,17 @@
+
+Running 36 tests using 2 workers
+
+  ok  1 [chromium] › tests\audit.spec.js:11:1 › cloud activity and new favorites sync together without server-only columns (10.6s)
+  ok  2 [chromium] › tests\audit.spec.js:4:1 › search includes tracks beyond the default Supabase row limit (10.6s)
+  ok  4 [chromium] › tests\audit.spec.js:41:1 › profile write failure is visible and Retry profile actually recovers (10.7s)
+  ok  3 [chromium] › tests\audit.spec.js:27:1 › missing profile is recovered using allowed fields and survives refresh (10.8s)
+  ok  6 [chromium] › tests\audit.spec.js:85:3 › mobile podcast navigation, seasons, playback and refresh 390x844 (15.0s)
+  ok  5 [chromium] › tests\audit.spec.js:59:1 › logout removes persisted player and isolates a second account (16.7s)
+  ok  7 [chromium] › tests\audit.spec.js:85:3 › mobile podcast navigation, seasons, playback and refresh 375x812 (4.0s)
+  ok  8 [chromium] › tests\v2.spec.js:4:1 › landing, login, registration confirmation and authenticated routes (3.3s)
+  x   9 [chromium] › tests\v2.spec.js:25:3 › natural endings: shuffle=false, repeat=none (16.6s)
+  x  10 [chromium] › tests\v2.spec.js:25:3 › natural endings: shuffle=false, repeat=one (19.0s)
+  x  11 [chromium] › tests\v2.spec.js:25:3 › natural endings: shuffle=false, repeat=all (26.4s)
+  x  12 [chromium] › tests\v2.spec.js:25:3 › natural endings: shuffle=true, repeat=none (24.5s)
+  x  13 [chromium] › tests\v2.spec.js:25:3 › natural endings: shuffle=true, repeat=one (25.5s)
+  x  14 [chromium] › tests\v2.spec.js:25:3 › natural endings: shuffle=true, repeat=all (25.7s)

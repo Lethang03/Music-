@@ -87,6 +87,7 @@ export default function Sidebar() {
           display: flex;
           flex-direction: column;
           padding: var(--space-5);
+          padding-bottom: calc(var(--player-height) + var(--space-5));
           height: 100%;
           position: relative;
         }

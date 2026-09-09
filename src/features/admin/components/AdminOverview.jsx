@@ -25,6 +25,10 @@ export default function AdminOverview() {
           supabase.from('podcasts').select('id, title, author, cover_url, created_at, published').order('created_at', { ascending: false }).limit(5)
         ])
 
+        for (const result of [tCount, pCount, eCount, uCount, rTracks, rPods]) {
+          if (result.error) throw result.error
+        }
+
         if (cancelled) return
 
         setStats({
@@ -111,4 +115,3 @@ export default function AdminOverview() {
     </div>
   )
 }
-

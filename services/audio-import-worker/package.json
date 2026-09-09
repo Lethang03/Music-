@@ -1,0 +1,7 @@
+{
+  "name": "soundverse-audio-import-worker",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node index.js" },
+  "dependencies": { "@supabase/supabase-js": "^2.39.3" }
+}

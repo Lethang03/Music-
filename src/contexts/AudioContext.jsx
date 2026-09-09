@@ -27,8 +27,11 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
   const persist = useCallback(() => {
     if (cleared.current) return
     const { queue, index, currentTime } = model.current
-    // StrictMode cleanup can run before metadata applies the restored seek.
-    writeStored(storageKey, { queue, index, currentTime: pendingSeek.current || currentTime })
+    // Prefer the media element over React state: pagehide and pause can occur
+    // between timeupdate events. A pending restore must win until metadata has
+    // made that seek safe to apply.
+    const liveTime = audioRef.current?.readyState ? audioRef.current.currentTime : currentTime
+    writeStored(storageKey, { queue, index, currentTime: pendingSeek.current || liveTime || 0 })
     const { volume, shuffle, repeat, autoplay } = model.current
     writeStored('v2_playback_preferences', { volume, shuffle, repeat, autoplay })
     writeStored('v2_volume', volume)
@@ -98,11 +101,13 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     } else load(s.index - 1, true, 0)
   }, [load, publish])
   useEffect(() => {
-    // Effect-owned resource: StrictMode cleanup releases the discarded instance.
+    // Keep one media instance under the provider's ownership. Besides avoiding
+    // a rendered element being replaced outside the player lifecycle, this is
+    // the instance exposed by window.Audio in the Playwright media fixture.
     const audio = new Audio()
+    audioRef.current = audio
     audio.preload = 'metadata'
     audio.volume = clampVolume(model.current.volume)
-    audioRef.current = audio
     let lastTick = performance.now()
     const handlers = {
       timeupdate: () => {
@@ -114,15 +119,26 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
         if (Date.now() - lastSaved.current > 5000) { persist(); lastSaved.current = Date.now() }
       },
       loadedmetadata: () => {
-        if (pendingSeek.current && Number.isFinite(audio.duration)) audio.currentTime = Math.min(pendingSeek.current, Math.max(0, audio.duration - 0.1))
+        // currentTime is only seekable after metadata exists. Keep the pending
+        // value until this event so a refresh cannot discard a podcast offset.
+        const savedPosition = pendingSeek.current
+        if (savedPosition > 0) {
+          const maxPosition = Number.isFinite(audio.duration) && audio.duration > 0
+            ? Math.max(0, audio.duration - 0.1)
+            : savedPosition
+          audio.currentTime = Math.min(savedPosition, maxPosition)
+        }
         pendingSeek.current = 0
         publish({ duration: Number.isFinite(audio.duration) ? audio.duration : 0, currentTime: audio.currentTime })
+        if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession && Number.isFinite(audio.duration) && audio.duration > 0) {
+          try { navigator.mediaSession.setPositionState({ duration: audio.duration, playbackRate: audio.playbackRate || 1, position: audio.currentTime }) } catch { /* Ignore */ }
+        }
       },
       durationchange: () => publish({ duration: Number.isFinite(audio.duration) ? audio.duration : 0 }),
-      playing: () => { lastTick = performance.now(); publish({ isPlaying: true, error: '' }) },
-      pause: () => { publish({ isPlaying: false }); report(); persist() },
-      ended: () => { report(true); handleNext(true) },
-      error: () => publish({ isPlaying: false, error: 'Audio could not be loaded. Check your connection or choose another item.' })
+      playing: () => { lastTick = performance.now(); publish({ isPlaying: true, error: '' }); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; },
+      pause: () => { publish({ isPlaying: false }); report(); persist(); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; },
+      ended: () => { report(true); handleNext(true); },
+      error: () => { publish({ isPlaying: false, error: 'Audio could not be loaded. Check your connection or choose another item.' }); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none'; }
     }
     Object.entries(handlers).forEach(([event, handler]) => audio.addEventListener(event, handler))
     const saved = readStored(storageKey, null)
@@ -164,7 +180,7 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
       window.removeEventListener('auth_signout', clearPlayer)
       window.removeEventListener('auth_cleared', clearPlayer)
       hardStop()
-      audioRef.current = null
+      if (audioRef.current === audio) audioRef.current = null
     }
   }, [storageKey, handleNext, load, persist, publish, report])
   const seek = useCallback(time => {
@@ -172,6 +188,9 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     if (audio && Number.isFinite(time) && Number.isFinite(audio.duration)) {
       audio.currentTime = Math.max(0, Math.min(time, audio.duration))
       publish({ currentTime: audio.currentTime }); report(); persist()
+      if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+        try { navigator.mediaSession.setPositionState({ duration: audio.duration, playbackRate: audio.playbackRate || 1, position: audio.currentTime }) } catch { /* Ignore */ }
+      }
     }
   }, [persist, publish, report])
   const togglePlay = useCallback(() => {
@@ -241,6 +260,20 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     try {
       navigator.mediaSession.metadata = new MediaMetadata({ title: item.title || '', artist: item.artist || item.author || '', artwork: artwork ? [{ src: artwork }] : [] })
     } catch { /* Invalid artwork must not interrupt playback. */ }
+
+    const updatePositionState = () => {
+      if ('setPositionState' in navigator.mediaSession && audioRef.current && Number.isFinite(audioRef.current.duration) && audioRef.current.duration > 0) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: audioRef.current.duration,
+            playbackRate: audioRef.current.playbackRate || 1,
+            position: audioRef.current.currentTime || 0
+          })
+        } catch { /* Ignore */ }
+      }
+    }
+    updatePositionState()
+
     const actions = { play: safePlay, pause: () => audioRef.current?.pause(), nexttrack: () => handleNext(), previoustrack: handlePrev, seekto: d => seek(d.seekTime) }
     Object.entries(actions).forEach(([name, fn]) => { try { navigator.mediaSession.setActionHandler(name, fn) } catch { /* Platform-dependent action. */ } })
     return () => {
@@ -248,7 +281,11 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
       navigator.mediaSession.metadata = null
     }
   }, [state.activeItem, safePlay, handleNext, handlePrev, seek])
-  return <AudioCtx.Provider value={{ ...state, currentIndex: state.index, togglePlay, seek, setVolume, setShuffle, setRepeat, setAutoplay: value => setPreference('autoplay', value), toggleShuffle: () => setShuffle(s => !s), toggleRepeat: () => setRepeat(r => r === 'none' ? 'all' : r === 'all' ? 'one' : 'none'), handleNext, handlePrev, playItem, addToQueue, playNext: item => addToQueue(item, true), removeFromQueue, reorderQueue, setCurrentIndex: index => load(index, true, 0) }}>{children}</AudioCtx.Provider>
+  return (
+    <AudioCtx.Provider value={{ ...state, currentIndex: state.index, togglePlay, seek, setVolume, setShuffle, setRepeat, setAutoplay: value => setPreference('autoplay', value), toggleShuffle: () => setShuffle(s => !s), toggleRepeat: () => setRepeat(r => r === 'none' ? 'all' : r === 'all' ? 'one' : 'none'), handleNext, handlePrev, playItem, addToQueue, playNext: item => addToQueue(item, true), removeFromQueue, reorderQueue, setCurrentIndex: index => load(index, true, 0) }}>
+      {children}
+    </AudioCtx.Provider>
+  )
 }
 export const useAudio = () => {
   const ctx = useContext(AudioCtx)

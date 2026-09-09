@@ -18,10 +18,15 @@ export default function AdminMusic() {
 
   const loadTracks = async () => {
     setLoading(true)
-    const { data, error } = await supabase.from('music_tracks').select('*').order('created_at', { ascending: false })
-    if (error) setError(error.message)
-    else setTracks(data || [])
-    setLoading(false)
+    try {
+      const { data, error } = await supabase.from('music_tracks').select('*').order('created_at', { ascending: false })
+      if (error) throw error
+      setTracks(data || [])
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { loadTracks() }, [])
@@ -68,7 +73,8 @@ export default function AdminMusic() {
 
       setForm(null)
       await loadTracks()
-      await loadPublicLibrary()
+      // Catalog refresh is best-effort and must not keep the editor busy forever.
+      void loadPublicLibrary().catch(err => setError(err.message))
       
       // Temporary toast
       const toast = document.createElement('div')
@@ -91,7 +97,7 @@ export default function AdminMusic() {
       const { error } = await supabase.from('music_tracks').delete().eq('id', track.id)
       if (error) throw error
       await loadTracks()
-      await loadPublicLibrary()
+      void loadPublicLibrary().catch(err => setError(err.message))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -105,7 +111,7 @@ export default function AdminMusic() {
       const { error } = await supabase.from('music_tracks').update({ published: !track.published }).eq('id', track.id)
       if (error) throw error
       await loadTracks()
-      await loadPublicLibrary()
+      void loadPublicLibrary().catch(err => setError(err.message))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -145,7 +151,7 @@ export default function AdminMusic() {
           value={search} 
           onChange={e => setSearch(e.target.value)} 
         />
-        <button className="v2-admin-btn-primary" onClick={() => setForm({ title: '', published: false })} disabled={busy}>
+        <button aria-label="Add content" className="v2-admin-btn-primary" onClick={() => setForm({ title: '', published: false })} disabled={busy}>
           + Add Track
         </button>
       </div>
@@ -167,7 +173,7 @@ export default function AdminMusic() {
             </thead>
             <tbody>
               {filtered.map(t => (
-                <tr key={t.id}>
+                <tr className="v2-media-row" key={t.id}>
                   <td>
                     <div className="v2-admin-cell-flex">
                       <img src={t.cover_url || ''} alt="" className="v2-admin-thumb-sm" />
@@ -206,4 +212,3 @@ export default function AdminMusic() {
     </div>
   )
 }
-

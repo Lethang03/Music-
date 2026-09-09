@@ -20,7 +20,7 @@ function formatTime(secs) {
 }
 
 // ─── Now Playing fullscreen overlay ────────────────────────────────────────
-function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
+function NowPlaying({ onClose, isClosing, activeItem, isPlaying, togglePlay,
   currentTime, duration, seek, volume, setVolume,
   handleNext, handlePrev, shuffle, setShuffle, repeat, setRepeat, queue, currentIndex }) {
 
@@ -36,7 +36,7 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
   const RepeatIcon = repeat === 'one' ? Repeat1 : Repeat
 
   return (
-    <div ref={dialogRef} className="v2-np-fullscreen" role="dialog" aria-label="Now playing" aria-modal="true">
+    <div ref={dialogRef} className={`v2-np-fullscreen ${isClosing ? 'closing' : ''}`} role="dialog" aria-label="Now playing" aria-modal="true">
       {/* Blurred background — atmospheric only, z-index: 0 */}
       <div
         className="v2-np-blur-bg"
@@ -229,6 +229,13 @@ function NowPlaying({ onClose, activeItem, isPlaying, togglePlay,
           z-index: 70;
           overflow: hidden;
           animation: v2-np-slide-up var(--transition-cinematic) forwards;
+        }
+        .v2-np-fullscreen.closing {
+          animation: v2-np-slide-down 0.3s forwards;
+        }
+        @keyframes v2-np-slide-down {
+          from { transform: translateY(0); opacity: 1; }
+          to { transform: translateY(100%); opacity: 0; }
         }
 
         @keyframes v2-np-slide-up {
@@ -607,6 +614,7 @@ export default function GlobalPlayer() {
   const { favorites, toggleFavorite } = useLibrary()
   const liked = favorites.some(x => mediaKey(x) === mediaKey(activeItem))
   const [showNowPlaying, setShowNowPlaying] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
   const [muted, setMuted] = useState(false)
   const [prevVolume, setPrevVolume] = useState(1)
 
@@ -630,9 +638,16 @@ export default function GlobalPlayer() {
   return (
     <>
       {/* Now Playing overlay */}
-      {showNowPlaying && (
+      {(showNowPlaying || isClosing) && (
         <NowPlaying
-          onClose={() => setShowNowPlaying(false)}
+          isClosing={isClosing}
+          onClose={() => {
+            setIsClosing(true)
+            setTimeout(() => {
+              setShowNowPlaying(false)
+              setIsClosing(false)
+            }, 300)
+          }}
           activeItem={activeItem}
           isPlaying={isPlaying}
           togglePlay={togglePlay}
@@ -651,11 +666,17 @@ export default function GlobalPlayer() {
       )}
 
       {/* Mini player bar */}
-      <div className="v2-player-bar">
+      <div className="v2-player-bar" onClick={(e) => {
+        // On mobile, clicking the bar opens Now Playing (unless clicking a button)
+        if (window.innerWidth <= 768 && !e.target.closest('button') && !e.target.closest('.v2-player-progress-strip')) {
+          setShowNowPlaying(true)
+        }
+      }}>
         {error && <div role="alert" className="v2-player-error">{error}</div>}
-        {/* Progress bar at very top of player */}
+        
+        {/* Mobile only progress strip */}
         <div
-          className="v2-player-progress-strip"
+          className="v2-player-progress-strip v2-mobile-only"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect()
             seek(((e.clientX - rect.left) / rect.width) * duration)
@@ -676,14 +697,14 @@ export default function GlobalPlayer() {
               onKeyDown={e => e.key === 'Enter' && setShowNowPlaying(true)}
             >
               {artworkUrl && <img src={artworkUrl} alt="" />}
-              <div className="v2-player-art-hover"><Maximize2 size={14} /></div>
+              <div className="v2-player-art-hover v2-desktop-only"><Maximize2 size={14} /></div>
             </div>
             <div className="v2-player-track-text">
               <strong>{activeItem.title}</strong>
               <small>{activeItem.artist || activeItem.author}</small>
             </div>
-            <button className="v2-icon-btn" title={liked ? 'Remove favorite' : 'Favorite'} aria-pressed={liked} onClick={() => toggleFavorite(activeItem)} style={{ flexShrink: 0 }}>
-              <Heart size={16} />
+            <button className="v2-icon-btn v2-desktop-only" title={liked ? 'Remove favorite' : 'Favorite'} aria-pressed={liked} onClick={() => toggleFavorite(activeItem)} style={{ flexShrink: 0 }}>
+              <Heart size={16} className={liked ? "v2-liked" : ""} />
             </button>
           </div>
 
@@ -691,13 +712,13 @@ export default function GlobalPlayer() {
           <div className="v2-player-center">
             <div className="v2-player-controls">
               <button
-                className={`v2-ctrl-secondary ${shuffle ? 'on' : ''}`}
+                className={`v2-ctrl-secondary v2-desktop-only ${shuffle ? 'on' : ''}`}
                 onClick={() => setShuffle(s => !s)}
                 title="Shuffle"
               >
                 <Shuffle size={16} />
               </button>
-              <button className="v2-ctrl-btn" onClick={handlePrev} title="Previous">
+              <button className="v2-ctrl-btn v2-desktop-only" onClick={handlePrev} title="Previous">
                 <SkipBack size={20} fill="currentColor" />
               </button>
               <button className="v2-ctrl-play" onClick={togglePlay} title={isPlaying ? 'Pause' : 'Play'}>
@@ -706,18 +727,18 @@ export default function GlobalPlayer() {
                   : <Play  size={20} fill="currentColor" style={{ marginLeft: '2px' }} />
                 }
               </button>
-              <button className="v2-ctrl-btn" onClick={() => handleNext(false)} title="Next">
+              <button className="v2-ctrl-btn v2-desktop-only" onClick={() => handleNext(false)} title="Next">
                 <SkipForward size={20} fill="currentColor" />
               </button>
               <button
-                className={`v2-ctrl-secondary ${repeat !== 'none' ? 'on' : ''}`}
+                className={`v2-ctrl-secondary v2-desktop-only ${repeat !== 'none' ? 'on' : ''}`}
                 onClick={() => setRepeat(r => r === 'none' ? 'all' : r === 'all' ? 'one' : 'none')}
                 title={`Repeat: ${repeat}`}
               >
                 {repeat === 'one' ? <Repeat1 size={16} /> : <Repeat size={16} />}
               </button>
             </div>
-            <div className="v2-player-time-row">
+            <div className="v2-player-time-row v2-desktop-only">
               <span className="v2-player-time">{formatTime(currentTime)}</span>
               <div
                 className="v2-player-seek" role="slider" tabIndex={0} aria-label="Playback position" aria-valuemin={0} aria-valuemax={duration} aria-valuenow={currentTime} onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); seek(currentTime + (e.key === 'ArrowRight' ? 5 : -5)) } }}
@@ -737,8 +758,8 @@ export default function GlobalPlayer() {
           </div>
 
           {/* Right: volume + expand */}
-          <div className="v2-player-right">
-            <button className="v2-icon-btn" onClick={() => setShowNowPlaying(true)} title="Open Now Playing">
+          <div className="v2-player-right v2-desktop-only">
+            <button className="v2-icon-btn" onClick={() => setShowNowPlaying(true)} title="Queue">
               <ListMusic size={18} />
             </button>
             <div className="v2-volume-row">
@@ -756,6 +777,9 @@ export default function GlobalPlayer() {
                 aria-label="Volume"
               />
             </div>
+            <button className="v2-icon-btn" onClick={() => setShowNowPlaying(true)} title="Fullscreen">
+              <Maximize2 size={18} />
+            </button>
           </div>
         </div>
       </div>
@@ -769,160 +793,226 @@ export default function GlobalPlayer() {
           z-index: 50;
           display: flex;
           flex-direction: column;
-          background: rgba(11, 11, 22, 0.96);
-          backdrop-filter: blur(32px);
-          -webkit-backdrop-filter: blur(32px);
-          border-top: 1px solid rgba(255,255,255,0.06);
+          background: rgba(11, 11, 22, 0.85);
+          backdrop-filter: blur(40px) saturate(1.5);
+          -webkit-backdrop-filter: blur(40px) saturate(1.5);
+          border-top: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .v2-player-error {
+          position: absolute;
+          top: -32px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #e74c3c;
+          color: white;
+          padding: 4px 16px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 600;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .v2-mobile-only {
+          display: none;
         }
 
         .v2-player-progress-strip {
           width: 100%;
-          height: 3px;
+          height: 2px;
           background: rgba(255,255,255,0.08);
           cursor: pointer;
           flex-shrink: 0;
+          position: absolute;
+          top: 0;
+          left: 0;
+          border-radius: 8px 8px 0 0;
+          overflow: hidden;
         }
         .v2-player-progress-fill {
           height: 100%;
           background: var(--accent-gradient);
-          transition: width 0.25s linear;
+          transition: width 0.15s linear;
+          border-radius: 8px 0 0 0;
         }
 
         .v2-player-inner {
           flex: 1;
           display: grid;
-          grid-template-columns: 1fr 2fr 1fr;
+          grid-template-columns: 30% 40% 30%;
           align-items: center;
           padding: 0 24px;
           gap: 16px;
+          height: 100%;
         }
 
         /* Track info */
         .v2-player-info {
-          display: flex; align-items: center; gap: 12px;
+          display: flex; align-items: center; gap: 14px;
           min-width: 0;
         }
         .v2-player-art {
-          width: 52px; height: 52px;
-          border-radius: 10px; overflow: hidden;
+          width: 56px; height: 56px;
+          border-radius: 6px; overflow: hidden;
           position: relative; flex-shrink: 0;
-          cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+          cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          transition: transform 0.2s ease;
+        }
+        .v2-player-art:hover {
+          transform: scale(1.05);
         }
         .v2-player-art img {
           width: 100%; height: 100%; object-fit: cover;
         }
         .v2-player-art-hover {
           position: absolute; inset: 0;
-          background: rgba(0,0,0,0.55);
+          background: rgba(0,0,0,0.6);
           display: grid; place-items: center;
           color: white; opacity: 0;
-          transition: opacity 0.15s;
+          transition: opacity 0.2s;
         }
         .v2-player-art:hover .v2-player-art-hover { opacity: 1; }
         .v2-player-track-text {
-          display: flex; flex-direction: column; gap: 2px;
-          min-width: 0; flex: 1;
+          display: flex; flex-direction: column; gap: 3px;
+          min-width: 0;
         }
         .v2-player-track-text strong {
-          font-size: 0.9rem; font-weight: 700;
+          font-size: 0.95rem; font-weight: 600;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           color: var(--text-primary);
         }
         .v2-player-track-text small {
-          font-size: 0.78rem; color: var(--text-secondary);
+          font-size: 0.8rem; color: var(--text-secondary);
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .v2-liked {
+          color: var(--accent-primary);
+          fill: var(--accent-primary);
         }
 
         /* Center */
         .v2-player-center {
           display: flex; flex-direction: column;
-          align-items: center; gap: 6px;
+          align-items: center; justify-content: center;
+          gap: 8px;
+          max-width: 722px;
+          width: 100%;
+          margin: 0 auto;
         }
         .v2-player-controls {
-          display: flex; align-items: center; gap: 8px;
+          display: flex; align-items: center; gap: 16px;
         }
         .v2-ctrl-btn {
           background: none; border: none; color: var(--text-primary);
           cursor: pointer; padding: 8px; border-radius: 50%;
-          transition: all 0.15s; display: grid; place-items: center;
+          transition: all 0.2s ease; display: grid; place-items: center;
+          opacity: 0.7;
         }
-        .v2-ctrl-btn:hover { color: var(--accent-primary); transform: scale(1.1); }
+        .v2-ctrl-btn:hover { opacity: 1; transform: scale(1.1); }
         .v2-ctrl-secondary {
           background: none; border: none; color: var(--text-tertiary);
           cursor: pointer; padding: 8px; border-radius: 50%;
-          transition: all 0.15s; display: grid; place-items: center;
+          transition: all 0.2s ease; display: grid; place-items: center;
         }
         .v2-ctrl-secondary:hover { color: var(--text-primary); }
-        .v2-ctrl-secondary.on { color: var(--accent-primary); }
+        .v2-ctrl-secondary.on { color: var(--accent-primary); opacity: 1; }
         .v2-ctrl-play {
-          width: 38px; height: 38px; border-radius: 50%;
+          width: 32px; height: 32px; border-radius: 50%;
           background: white; color: black; border: none;
           display: grid; place-items: center; cursor: pointer;
-          transition: transform 0.15s; flex-shrink: 0;
+          transition: transform 0.2s ease, background 0.2s ease; flex-shrink: 0;
         }
-        .v2-ctrl-play:hover { transform: scale(1.06); }
+        .v2-ctrl-play:hover { transform: scale(1.08); background: #f0f0f0; }
 
         /* Seek row */
         .v2-player-time-row {
           display: flex; align-items: center; gap: 8px; width: 100%;
         }
         .v2-player-time {
-          font-size: 0.625rem; color: var(--text-tertiary);
-          font-variant-numeric: tabular-nums; width: 32px; text-align: center;
+          font-size: 0.7rem; color: var(--text-tertiary);
+          font-variant-numeric: tabular-nums; width: 40px; text-align: center;
         }
         .v2-player-seek {
-          flex: 1; height: 16px; display: flex; align-items: center; cursor: pointer;
+          flex: 1; height: 12px; display: flex; align-items: center; cursor: pointer;
         }
         .v2-player-seek-track {
-          width: 100%; height: 3px; background: rgba(255,255,255,0.1);
+          width: 100%; height: 4px; background: rgba(255,255,255,0.1);
           border-radius: 2px; position: relative;
-          transition: height 0.12s ease;
+          transition: background 0.2s ease;
         }
-        .v2-player-seek:hover .v2-player-seek-track { height: 5px; }
+        .v2-player-seek:hover .v2-player-seek-track { background: rgba(255,255,255,0.15); }
         .v2-player-seek-fill {
-          height: 100%; background: var(--accent-gradient);
+          height: 100%; background: var(--text-primary);
           border-radius: 2px; position: relative;
+          transition: background 0.2s ease;
         }
+        .v2-player-seek:hover .v2-player-seek-fill { background: var(--accent-gradient); }
         .v2-player-seek-thumb {
-          position: absolute; right: -5px; top: 50%;
+          position: absolute; right: -6px; top: 50%;
           transform: translateY(-50%) scale(0);
           width: 12px; height: 12px; border-radius: 50%;
           background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-          transition: transform 0.12s ease;
+          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .v2-player-seek:hover .v2-player-seek-thumb { transform: translateY(-50%) scale(1); }
 
         /* Right */
         .v2-player-right {
           display: flex; align-items: center;
-          justify-content: flex-end; gap: 8px;
+          justify-content: flex-end; gap: 12px;
         }
+        .v2-icon-btn {
+          background: none; border: none; color: var(--text-secondary);
+          cursor: pointer; transition: color 0.2s ease, transform 0.2s ease;
+          display: grid; place-items: center;
+        }
+        .v2-icon-btn:hover { color: var(--text-primary); transform: scale(1.1); }
         .v2-volume-row {
-          display: flex; align-items: center; gap: 4px;
+          display: flex; align-items: center; gap: 6px;
         }
         .v2-volume-slider {
-          width: 80px; height: 4px; -webkit-appearance: none; appearance: none;
+          width: 90px; height: 4px; -webkit-appearance: none; appearance: none;
           background: rgba(255,255,255,0.15); border-radius: 2px; outline: none; cursor: pointer;
+          transition: background 0.2s ease;
         }
+        .v2-volume-slider:hover { background: rgba(255,255,255,0.25); }
         .v2-volume-slider::-webkit-slider-thumb {
           -webkit-appearance: none; width: 12px; height: 12px;
           border-radius: 50%; background: white; cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          transition: transform 0.2s ease;
+        }
+        .v2-volume-slider::-webkit-slider-thumb:hover {
+          transform: scale(1.2);
         }
 
         /* Mobile overrides */
         @media (max-width: 768px) {
+          .v2-desktop-only { display: none !important; }
+          .v2-mobile-only { display: block !important; }
+
           .v2-player-bar {
-            /* On mobile, the player sits ABOVE the BottomNav */
-            bottom: var(--mobile-nav-height);
+            height: var(--player-height-mobile);
+            padding: 0;
+            background: rgba(20, 20, 30, 0.95);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: calc(var(--mobile-nav-height) + 8px);
           }
           .v2-player-inner {
             grid-template-columns: 1fr auto;
             padding: 0 12px;
-            gap: 8px;
+            gap: 12px;
           }
-          .v2-player-right { display: none; }
-          .v2-player-controls { gap: 4px; }
-          .v2-player-art { width: 44px; height: 44px; }
+          .v2-player-info { gap: 10px; }
+          .v2-player-art { width: 44px; height: 44px; border-radius: 4px; }
+          .v2-player-center { max-width: none; margin: 0; justify-content: center; }
+          .v2-ctrl-play { width: 32px; height: 32px; background: transparent; color: white; box-shadow: none; }
+          .v2-ctrl-play:hover { background: transparent; transform: scale(1.1); color: var(--accent-primary); }
         }
       `}</style>
     </>

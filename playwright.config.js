@@ -13,7 +13,7 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: process.env.SOUNDVERSE_EXTERNAL_SERVER ? undefined : {
     command: 'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 3100 --strictPort',
-    url: 'http://127.0.0.1:3100', reuseExistingServer: false,
+    url: 'http://127.0.0.1:3100', reuseExistingServer: true,
     env: { VITE_SUPABASE_URL: 'https://soundverse-test.supabase.co', VITE_SUPABASE_ANON_KEY: 'sb_publishable_fixture' }
   }
 })

@@ -139,7 +139,8 @@
 .v2-admin-content-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 32px;
+  padding: 32px 32px calc(var(--player-height) + 48px);
+  scroll-padding-bottom: calc(var(--player-height) + 48px);
 }
 
 .v2-admin-mobile-nav {
@@ -460,11 +461,19 @@
   
   .v2-admin-mobile-nav {
     display: flex;
-    justify-content: space-around;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 24px;
     background: rgba(11, 11, 19, 0.95);
     border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 12px 0;
+    padding: 12px 16px;
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    scrollbar-width: none; /* Firefox */
+  }
+  .v2-admin-mobile-nav::-webkit-scrollbar {
+    display: none; /* Safari/Chrome */
   }
 
   .v2-admin-mobile-item {
@@ -475,14 +484,17 @@
     background: none;
     border: none;
     color: rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    white-space: nowrap;
   }
 
   .v2-admin-mobile-item.active {
-    color: #fff;
+    color: #B833FF; /* Highlight active */
   }
 
   .v2-admin-header { padding: 0 16px; }
-  .v2-admin-content-scroll { padding: 16px; }
+  .v2-admin-content-scroll { padding: 16px 16px calc(var(--player-height) + var(--mobile-nav-height) + 40px); }
   
   .v2-admin-recent-grid { grid-template-columns: 1fr; }
   .v2-form-grid { grid-template-columns: 1fr; }
@@ -505,3 +517,5 @@
     align-items: flex-end;
   }
 }
+/* Test hooks reuse the shared media-row selector without changing table layout. */
+tr.v2-media-row { display: table-row; padding: 0; border: 0; }

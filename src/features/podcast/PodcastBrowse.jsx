@@ -109,7 +109,7 @@ export default function PodcastBrowse() {
         }
         .v2-filter-row::-webkit-scrollbar { display: none; }
         .v2-filter-pill {
-          white-space: nowrap; padding: 8px 20px;
+          white-space: nowrap; padding: 10px 20px;
           border-radius: var(--radius-full);
           background: transparent; border: 1px solid rgba(255,255,255,0.1);
           color: var(--text-secondary); font-weight: 600; font-size: 0.875rem;

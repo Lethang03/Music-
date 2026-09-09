@@ -18,10 +18,15 @@ export default function AdminPodcasts() {
 
   const loadPodcasts = async () => {
     setLoading(true)
-    const { data, error } = await supabase.from('podcasts').select('*, episodes(count)').order('created_at', { ascending: false })
-    if (error) setError(error.message)
-    else setPodcasts(data || [])
-    setLoading(false)
+    try {
+      const { data, error } = await supabase.from('podcasts').select('*, episodes(count)').order('created_at', { ascending: false })
+      if (error) throw error
+      setPodcasts(data || [])
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { loadPodcasts() }, [])

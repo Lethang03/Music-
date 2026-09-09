@@ -99,7 +99,7 @@ export default function AppShell({ children }) {
           overflow-y: auto;
           overflow-x: hidden;
           /* Leave room for the fixed global player */
-          padding-bottom: var(--player-height);
+          padding-bottom: calc(var(--player-height) + 32px + env(safe-area-inset-bottom));
           /* Custom scrollbar */
           scrollbar-width: thin;
           scrollbar-color: rgba(255,255,255,0.1) transparent;
@@ -153,7 +153,7 @@ export default function AppShell({ children }) {
           }
           .v2-main-content {
             /* On mobile, leave room for both player mini and bottom nav */
-            padding-bottom: calc(var(--player-height) + var(--mobile-nav-height));
+            padding-bottom: calc(var(--player-height-mobile) + var(--mobile-nav-height) + 32px + env(safe-area-inset-bottom));
           }
           .v2-page-container {
             padding: 20px 16px 32px;

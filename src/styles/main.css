@@ -321,11 +321,6 @@ html[data-theme=light] .v2-np-fullscreen { --text-primary:#fff; --text-secondary
 }
 @media(prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; } }
 @media(max-width:768px) {
- :root { --player-height:80px; }
- .v2-player-bar .v2-ctrl-secondary, .v2-player-bar button[title=Previous], .v2-player-bar .v2-player-time-row { display:none; }
- .v2-player-bar .v2-player-inner { grid-template-columns:minmax(0,1fr) auto; }
- .v2-player-bar .v2-player-info { gap:8px; }
- .v2-player-bar .v2-player-progress-strip { height:6px; }
  .v2-landing-header { padding:20px 16px !important; flex-wrap:wrap; gap:16px; }
  .v2-header-actions { gap:8px !important; }
  .v2-header-actions button { padding:10px 16px; }

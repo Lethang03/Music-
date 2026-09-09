@@ -14,21 +14,25 @@ try {
  await check('full migration sequence bootstraps an empty public schema', async () => {
    const fresh = new PGlite()
    try {
-     await fresh.exec(`create role anon; create role authenticated; create schema auth;
+     await fresh.exec(`create role anon; create role authenticated; create role service_role; create schema auth; create schema storage;
        create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');
+       create table storage.buckets(id text primary key, name text, public boolean default false);
+       create table storage.objects(id uuid primary key default gen_random_uuid(), bucket_id text, name text);
        create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
        create function auth.jwt() returns jsonb language sql stable as $$ select '{}'::jsonb $$;
-       grant usage on schema public,auth to anon,authenticated;
-       insert into auth.users(id,email) values ('${u1}','existing@example.test');`)
+       grant usage on schema public,auth to anon,authenticated;`)
      for (const file of readdirSync('supabase/migrations').filter(f => f.endsWith('.sql')).sort()) await fresh.exec(readFileSync(`supabase/migrations/${file}`, 'utf8').replace(/^\uFEFF/, ''))
+     await fresh.exec(`insert into auth.users(id,email,raw_user_meta_data) values ('${u1}','existing@example.test','{"display_name":"existing"}');`)
      assert.equal((await fresh.query('select display_name from profiles')).rows[0].display_name, 'existing')
      assert.equal((await fresh.query('select * from soundverse_activity')).rows.length, 0)
    } finally { await fresh.close() }
  })
  await db.exec(`
- create role anon; create role authenticated;
- create schema auth;
+ create role anon; create role authenticated; create role service_role;
+ create schema auth; create schema storage;
  create table auth.users(id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
+ create table storage.buckets(id text primary key, name text, public boolean default false);
+ create table storage.objects(id uuid primary key default gen_random_uuid(), bucket_id text, name text);
  create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
  create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
  grant usage on schema public,auth to anon,authenticated;

@@ -8,7 +8,7 @@ function wav(seconds) {
   for (let i = 0; i < count; i++) b.writeInt16LE(Math.round(Math.sin(i * 2 * Math.PI * 220 / 8000) * 400), 44 + i * 2)
   return b
 }
-export async function setup(page, { signedIn = true, seconds = 12, admin = false, fail = '', player, preferences } = {}) {
+export async function setup(page, { signedIn = true, seconds = 12, admin = false, fail = '', player, preferences, rejectPlay = false } = {}) {
   const user = { id: userId, email: 'listener@example.test', app_metadata: { role: admin ? 'admin' : 'user' }, user_metadata: { display_name: 'Listener' }, aud: 'authenticated', role: 'authenticated' }
   const payload = Buffer.from(JSON.stringify({ sub: userId, role: 'authenticated', exp: Math.floor(Date.now()/1000)+7200 })).toString('base64url')
   const session = { access_token: `eyJhbGciOiJIUzI1NiJ9.${payload}.fixture`, refresh_token: 'fixture-refresh', expires_at: Math.floor(Date.now()/1000)+7200, expires_in: 7200, token_type: 'bearer', user }
@@ -68,7 +68,7 @@ export async function setup(page, { signedIn = true, seconds = 12, admin = false
     return route.fulfill({ status: range ? 206 : 200, contentType: 'audio/wav', headers: { 'accept-ranges': 'bytes', 'content-length': String(end - start + 1), ...(range ? { 'content-range': `bytes ${start}-${end}/${body.length}` } : {}) }, body: body.subarray(start, end + 1) })
   })
   await page.route(url => ['images.unsplash.com', 'i.pravatar.cc'].includes(url.hostname), route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#381f5d"/></svg>' }))
-  await page.addInitScript(({ session, signedIn, player, preferences, userId }) => {
+  await page.addInitScript(({ session, signedIn, player, preferences, userId, rejectPlay }) => {
     if (!sessionStorage.getItem('fixture-initialized')) {
       sessionStorage.setItem('fixture-initialized','yes')
       if (signedIn) localStorage.setItem('sb-soundverse-test-auth-token', JSON.stringify(session))
@@ -79,11 +79,12 @@ export async function setup(page, { signedIn = true, seconds = 12, admin = false
     const NativeAudio = window.Audio
     window.Audio = function(...args) {
       const audio = new NativeAudio(...args); window.testAudio.push(audio)
+      if (rejectPlay) audio.play = () => Promise.reject(new DOMException('iOS media transition rejected', 'NotAllowedError'))
       for (const event of ['playing','ended','pause','error']) audio.addEventListener(event, () => window.mediaEvents.push({ event, src: audio.src, time: audio.currentTime }))
       return audio
     }
     window.Audio.prototype = NativeAudio.prototype
-  }, { session, signedIn, player, preferences, userId })
+  }, { session, signedIn, player, preferences, userId, rejectPlay })
   const errors = []
   page.on('pageerror', e => errors.push(e.message))
   return { db, catalog, podcastId, errors, session }

@@ -57,6 +57,8 @@ export default function AdminMusic() {
         explicit_content: payloadWithFiles.explicit_content,
         description: payloadWithFiles.description || null,
         lyrics: payloadWithFiles.lyrics || null,
+        lyrics_type: payloadWithFiles.lyrics_type || 'plain',
+        synced_lyrics: payloadWithFiles.synced_lyrics,
         audio_url: finalAudio,
         cover_url: finalCover || null,
         published: payloadWithFiles.published

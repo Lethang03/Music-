@@ -6,6 +6,10 @@ import { readStored } from './lib/storage'
 document.documentElement.dataset.theme = readStored('soundverse_theme', 'dark')
 import './styles/variables.css'
 import './styles/main.css'
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(error => console.warn('Offline support unavailable:', error))
+  })
 const isTestOrDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'test' || /Playwright/i.test(navigator.userAgent)
 
 async function prepareServiceWorker() {
@@ -38,6 +42,7 @@ async function prepareServiceWorker() {
   }
 }
 
+ReactDOM.createRoot(document.getElementById('root')).render(
 async function startApp() {
   await prepareServiceWorker()
   ReactDOM.createRoot(document.getElementById('root')).render(
@@ -46,6 +51,7 @@ async function startApp() {
       <App />
     </BrowserRouter>
   </React.StrictMode>,
+)
   )
 }
 

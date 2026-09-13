@@ -1,0 +1,5 @@
+.v2-synced-lyrics { min-height: 100%; padding: 30% 4px; }
+.v2-synced-lyric { margin: 0 0 18px; color: var(--text-secondary); font-size: clamp(1.05rem, 2vw, 1.35rem); font-weight: 700; line-height: 1.36; letter-spacing: -.015em; transform-origin: left center; transition: color .28s ease, opacity .28s ease, transform .28s cubic-bezier(.2,.8,.2,1), filter .28s ease; }
+.v2-synced-lyric.active { color: var(--sv-text-primary); opacity: 1; transform: scale(1.045); filter: drop-shadow(0 0 14px rgba(34,211,238,.24)); }
+.v2-synced-lyric.past { color: var(--text-tertiary); opacity: .7; }
+@media (max-width: 768px) { .v2-synced-lyrics { padding: 24% 2px; } .v2-synced-lyric { font-size: 1.08rem; margin-bottom: 16px; } }

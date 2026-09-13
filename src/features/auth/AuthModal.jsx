@@ -83,17 +83,16 @@ export default function AuthModal({ onClose, mode = 'login' }) {
       </div>
 
       <style>{`
-        .v2-auth-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: grid; place-items: center; padding: 20px; }
-        .v2-auth-panel { position: relative; width: 100%; max-width: 440px; padding: 48px 40px; border-radius: var(--radius-xl); background: var(--bg-panel); box-shadow: var(--shadow-lg); }
+        .v2-auth-backdrop { position: fixed; inset: 0; background: rgba(5,7,13,.82); backdrop-filter:blur(8px); z-index: 1000; display: grid; place-items: center; padding: 20px; }
+        .v2-auth-panel { position: relative; width: 100%; max-width: 440px; padding: 48px 40px; border-radius: var(--radius-xl); background: var(--bg-panel-elevated); border:1px solid var(--sv-border-strong); box-shadow: var(--shadow-lg); }
         .v2-modal-close { position: absolute; top: 24px; right: 24px; width: 32px; height: 32px; border-radius: 50%; background: var(--bg-panel-elevated); display: grid; place-items: center; cursor: pointer; }
         .v2-auth-header { text-align: center; margin-bottom: 32px; }
         .v2-auth-header h2 { font-size: 2rem; margin-bottom: 8px; }
         .v2-auth-header p { color: var(--text-secondary); }
-        .v2-alert-error { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: var(--radius-md); font-size: 0.875rem; margin-bottom: 24px; }
+        .v2-alert-error { background: rgba(239,68,68,.1); color: #fca5a5; border: 1px solid rgba(239,68,68,.25); padding: 12px; border-radius: var(--radius-md); font-size: 0.875rem; margin-bottom: 24px; }
         .v2-auth-switch { text-align: center; margin-top: 24px; color: var(--text-secondary); font-size: 0.875rem; }
         .v2-auth-switch button { color: var(--accent-primary); font-weight: 700; cursor: pointer; }
       `}</style>
     </div>
   )
 }
-

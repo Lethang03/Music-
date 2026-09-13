@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { Home, Compass, Radio, Library, Heart, Sun, Coffee, Zap, Plus } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLibrary } from '../../contexts/LibraryContext'
+import SoundVerseLogo from '../branding/SoundVerseLogo'
 
 export default function Sidebar() {
   const { profile, isAdmin } = useAuth()
@@ -12,17 +13,7 @@ export default function Sidebar() {
     <aside className="v2-sidebar">
       <div className="v2-sidebar-header">
         <div className="v2-logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L12 22M6 8L6 16M18 8L18 16M3 12L4 12M20 12L21 12" stroke="url(#paint0_linear)" strokeWidth="3" strokeLinecap="round"/>
-            <defs>
-              <linearGradient id="paint0_linear" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#FF33A6"/>
-                <stop offset="0.5" stopColor="#B833FF"/>
-                <stop offset="1" stopColor="#4433FF"/>
-              </linearGradient>
-            </defs>
-          </svg>
-          SoundVerse
+          <SoundVerseLogo size="small" />
         </div>
       </div>
 
@@ -82,8 +73,8 @@ export default function Sidebar() {
       <style>{`
         .v2-sidebar {
           width: var(--sidebar-width);
-          background: rgba(11, 11, 19, 0.4);
-          border-right: 1px solid rgba(255,255,255,0.03);
+          background: rgba(5,7,13,.72);
+          border-right: 1px solid var(--sv-border);
           display: flex;
           flex-direction: column;
           padding: var(--space-5);
@@ -97,9 +88,7 @@ export default function Sidebar() {
           padding: 0 var(--space-2);
         }
         .v2-logo {
-          font-size: 1.25rem; font-weight: 800;
-          display: flex; align-items: center; gap: 10px;
-          letter-spacing: -0.02em; color: var(--text-primary);
+          display: flex; align-items: center;
         }
 
         .v2-sidebar-nav { display: flex; flex-direction: column; gap: var(--space-1); }

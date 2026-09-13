@@ -1,22 +1,42 @@
 :root {
-  /* Core Colors */
-  --bg-base: #0B0B13;
-  --bg-panel: rgba(25, 26, 36, 0.5);
-  --bg-panel-elevated: rgba(35, 37, 50, 0.7);
-  --bg-panel-hover: rgba(255, 255, 255, 0.05);
-  --bg-glass: rgba(11, 11, 19, 0.85);
+  /* SoundVerse core — aligned with the official violet / electric-blue / cyan mark. */
+  --sv-bg-main: #05070D;
+  --sv-bg-secondary: #0B1020;
+  --sv-bg-elevated: #11172A;
+  --sv-border: rgba(255,255,255,0.08);
+  --sv-border-strong: rgba(255,255,255,0.14);
+  --sv-text-primary: #F7FAFF;
+  --sv-text-secondary: #AAB4CC;
+  --sv-text-muted: #6F7A95;
+  --sv-blue: #3B82F6;
+  --sv-cyan: #22D3EE;
+  --sv-violet: #7C3AED;
+  --sv-purple: #9333EA;
+  --sv-magenta: #D946EF;
+  --sv-success: #22C55E;
+  --sv-warning: #F59E0B;
+  --sv-danger: #EF4444;
+  --sv-accent-gradient: linear-gradient(135deg, #7C3AED 0%, #3B82F6 48%, #22D3EE 100%);
+  --sv-accent-gradient-hot: linear-gradient(135deg, #D946EF 0%, #7C3AED 45%, #22D3EE 100%);
+  --sv-glow: 0 0 24px rgba(59,130,246,0.25);
+
+  --bg-base: var(--sv-bg-main);
+  --bg-panel: rgba(11, 16, 32, 0.72);
+  --bg-panel-elevated: rgba(17, 23, 42, 0.92);
+  --bg-panel-hover: rgba(59, 130, 246, 0.10);
+  --bg-glass: rgba(5, 7, 13, 0.84);
   
   /* Accents */
-  --accent-primary: #D14FFF;
-  --accent-secondary: #2B9BFF;
-  --accent-gradient: linear-gradient(135deg, #FF33A6 0%, #B833FF 50%, #4433FF 100%);
-  --accent-gradient-hover: linear-gradient(135deg, #FF66BE 0%, #D166FF 50%, #7766FF 100%);
-  --accent-glow: rgba(209, 79, 255, 0.4);
+  --accent-primary: var(--sv-cyan);
+  --accent-secondary: var(--sv-blue);
+  --accent-gradient: var(--sv-accent-gradient);
+  --accent-gradient-hover: var(--sv-accent-gradient-hot);
+  --accent-glow: rgba(59,130,246,0.28);
 
   /* Typography */
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.65);
-  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --text-primary: var(--sv-text-primary);
+  --text-secondary: var(--sv-text-secondary);
+  --text-tertiary: var(--sv-text-muted);
 
   /* Spacing System (8pt Grid) */
   --space-1: 4px;
@@ -30,16 +50,16 @@
   --space-9: 96px;
 
   /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-strong: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(138, 79, 255, 0.6);
+  --border-subtle: var(--sv-border);
+  --border-strong: var(--sv-border-strong);
+  --border-focus: rgba(34, 211, 238, 0.72);
 
   /* Shadows - Deep and Cinematic */
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.5);
   --shadow-lg: 0 16px 40px rgba(0,0,0,0.7);
   --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-neon: 0 0 20px rgba(138, 79, 255, 0.4);
+  --shadow-neon: var(--sv-glow);
 
   /* Radii */
   --radius-sm: 8px;
@@ -66,4 +86,3 @@
   --mobile-nav-height: 72px;
   --sidebar-width: 280px;
 }
-

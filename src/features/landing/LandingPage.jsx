@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import SoundVerseLogo from '../../components/branding/SoundVerseLogo'
 
 export default function LandingPage({ onShowAuth }) {
   // Using local state to manage AuthModal inside LandingPage if we want
@@ -13,13 +14,7 @@ export default function LandingPage({ onShowAuth }) {
 
       <header className="v2-landing-header">
         <div className="v2-brand">
-          <div className="v2-brand-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-          </div>
-          <div className="v2-brand-text">
-            <strong>SoundVerse</strong>
-            <span>MUSIC & PODCASTS</span>
-          </div>
+          <SoundVerseLogo size="large" tagline />
         </div>
         <div className="v2-header-actions">
           <button className="v2-btn-secondary" onClick={onShowAuth}>Log In</button>
@@ -82,11 +77,7 @@ export default function LandingPage({ onShowAuth }) {
         @keyframes blob-float { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(5%,10%) scale(1.1); } }
         
         .v2-landing-header { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 24px 48px; }
-        .v2-brand { display: flex; align-items: center; gap: 12px; }
-        .v2-brand-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--accent-gradient); display: grid; place-items: center; box-shadow: 0 8px 24px var(--accent-glow); }
-        .v2-brand-icon svg { width: 24px; height: 24px; }
-        .v2-brand-text strong { display: block; font-size: 1.25rem; font-weight: 800; }
-        .v2-brand-text span { font-size: 0.65rem; color: var(--accent-primary); letter-spacing: 0.2em; }
+        .v2-brand { display: flex; align-items: center; }
         .v2-header-actions { display: flex; gap: 16px; }
 
         .v2-landing-hero { position: relative; z-index: 10; flex: 1; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 64px; padding: 48px 8vw; max-width: 1600px; margin: 0 auto; }
@@ -116,4 +107,3 @@ export default function LandingPage({ onShowAuth }) {
     </div>
   )
 }
-

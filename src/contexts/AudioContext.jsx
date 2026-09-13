@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react'
 import { readStored, writeStored, mediaKey, mediaUrl, validUrl } from '../lib/storage'
+import { logPlaybackEvent } from '../lib/playbackDiagnostics'
 
 const AudioCtx = createContext(null)
 const clampVolume = value => Number.isFinite(Number(value)) ? Math.max(0, Math.min(1, Number(value))) : 1
@@ -41,17 +42,30 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     if (!audioRef.current?.readyState || pendingSeek.current) return
     if (s.activeItem) callbacks.current.onProgress?.(s.activeItem, audioRef.current?.currentTime || 0, audioRef.current?.duration || 0, done, elapsed)
   }, [])
-  const safePlay = useCallback(() => {
+  const diagnostic = useCallback((event, audio = audioRef.current, item = model.current.activeItem, detail = '') => logPlaybackEvent(event, audio, item, detail), [])
+  const safePlay = useCallback(async (reason = 'PLAY_REQUEST') => {
     const audio = audioRef.current
     if (!audio?.src) return
     const token = generation.current
+    diagnostic(reason, audio)
     publish({ error: '' })
-    audio.play().catch(error => {
-      if (token !== generation.current || error.name === 'AbortError') return
-      publish({ isPlaying: false, error: error.name === 'NotAllowedError' ? 'Playback was blocked. Press Play to try again.' : 'Unable to play this audio. Check your connection or choose another item.' })
-    })
-  }, [publish])
-  const load = useCallback((index, play = true, resume) => {
+    try {
+      await audio.play()
+      if (token === generation.current) diagnostic('PLAY_SUCCESS', audio)
+      return true
+    } catch (error) {
+      diagnostic('PLAY_REJECTED', audio, model.current.activeItem, `${error?.name || 'Error'}: ${error?.message || ''}`)
+      if (token !== generation.current) return false
+      const message = error?.name === 'NotAllowedError'
+        ? 'Playback was blocked. Press Play to try again.'
+        : error?.name === 'AbortError'
+          ? 'Playback was interrupted while switching tracks. Press Play to try again.'
+          : `Unable to play this audio: ${error?.message || 'unknown media error'}`
+      publish({ isPlaying: false, error: message })
+      return false
+    }
+  }, [diagnostic, publish])
+  const load = useCallback(async (index, play = true, resume, reason = 'SOURCE_CHANGED') => {
     const audio = audioRef.current
     const item = model.current.queue[index]
     if (!audio || !item) return
@@ -64,19 +78,22 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     const url = mediaUrl(item)
     if (!url || !validUrl(url)) {
       audio.removeAttribute('src'); audio.load()
+      diagnostic('ERROR', audio, item, 'Item has no playable audio URL')
       publish({ error: 'This item has no playable audio URL. Choose another item.' })
       return
     }
     pendingSeek.current = Math.max(0, resume ?? callbacks.current.getResumeTime?.(item) ?? 0)
     audio.src = url
     audio.load()
-    if (play) safePlay()
+    diagnostic('SOURCE_CHANGED', audio, item, reason)
+    if (play) await safePlay('PLAY_REQUEST')
     persist()
-  }, [persist, publish, report, safePlay])
-  const handleNext = useCallback((auto = false) => {
+  }, [diagnostic, persist, publish, report, safePlay])
+  const handleNext = useCallback(async (auto = false) => {
     const s = model.current
     if (!s.queue.length) return
-    if (auto && s.repeat === 'one') { load(s.index, true, 0); return }
+    diagnostic(auto ? 'ENDED' : 'MANUAL_NEXT')
+    if (auto && s.repeat === 'one') { diagnostic('NEXT_SELECTED', audioRef.current, s.queue[s.index], 'repeat-one'); await load(s.index, true, 0, 'repeat-one'); return }
     if (auto && !s.autoplay) { publish({ isPlaying: false }); persist(); return }
     const priority = s.queue.findIndex((item, index) => index !== s.index && item._playNext)
     let next = priority >= 0 ? priority : s.index + 1
@@ -90,9 +107,9 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
       next = choices.length ? choices[Math.floor(Math.random() * choices.length)] : s.queue.length
     }
     if (next >= s.queue.length && s.repeat === 'all') next = 0
-    if (next < s.queue.length) load(next, true, 0)
+    if (next < s.queue.length) { diagnostic('NEXT_SELECTED', audioRef.current, s.queue[next], auto ? 'ended' : 'manual'); await load(next, true, 0, auto ? 'ended' : 'manual-next') }
     else { audioRef.current?.pause(); publish({ isPlaying: false }); persist() }
-  }, [load, persist, publish])
+  }, [diagnostic, load, persist, publish])
   const handlePrev = useCallback(() => {
     const s = model.current
     if ((audioRef.current?.currentTime || 0) > 3 || s.index === 0) {
@@ -119,6 +136,7 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
         if (Date.now() - lastSaved.current > 5000) { persist(); lastSaved.current = Date.now() }
       },
       loadedmetadata: () => {
+        diagnostic('LOADEDMETADATA', audio)
         // currentTime is only seekable after metadata exists. Keep the pending
         // value until this event so a refresh cannot discard a podcast offset.
         const savedPosition = pendingSeek.current
@@ -135,10 +153,13 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
         }
       },
       durationchange: () => publish({ duration: Number.isFinite(audio.duration) ? audio.duration : 0 }),
-      playing: () => { lastTick = performance.now(); publish({ isPlaying: true, error: '' }); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; },
-      pause: () => { publish({ isPlaying: false }); report(); persist(); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; },
-      ended: () => { report(true); handleNext(true); },
-      error: () => { publish({ isPlaying: false, error: 'Audio could not be loaded. Check your connection or choose another item.' }); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none'; }
+      canplay: () => diagnostic('CANPLAY', audio),
+      playing: () => { diagnostic('PLAYING', audio); lastTick = performance.now(); publish({ isPlaying: true, error: '' }); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; },
+      pause: () => { diagnostic('PAUSE', audio); publish({ isPlaying: false }); report(); persist(); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; },
+      waiting: () => diagnostic('WAITING', audio),
+      stalled: () => diagnostic('STALLED', audio),
+      ended: () => { diagnostic('ENDED', audio); report(true); void handleNext(true); },
+      error: () => { diagnostic('ERROR', audio); publish({ isPlaying: false, error: 'Audio could not be loaded. Check your connection or choose another item.' }); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none'; }
     }
     Object.entries(handlers).forEach(([event, handler]) => audio.addEventListener(event, handler))
     const saved = readStored(storageKey, null)
@@ -155,6 +176,8 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     }
     
     window.addEventListener('pagehide', flush)
+    const visibility = () => diagnostic(document.visibilityState === 'hidden' ? 'VISIBILITY_HIDDEN' : 'VISIBILITY_VISIBLE', audio)
+    document.addEventListener('visibilitychange', visibility)
     const clearPlayer = () => {
       report()
       cleared.current = true
@@ -177,12 +200,13 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
       generation.current++
       Object.entries(handlers).forEach(([event, handler]) => audio.removeEventListener(event, handler))
       window.removeEventListener('pagehide', flush)
+      document.removeEventListener('visibilitychange', visibility)
       window.removeEventListener('auth_signout', clearPlayer)
       window.removeEventListener('auth_cleared', clearPlayer)
       hardStop()
       if (audioRef.current === audio) audioRef.current = null
     }
-  }, [storageKey, handleNext, load, persist, publish, report])
+  }, [storageKey, diagnostic, handleNext, load, persist, publish, report])
   const seek = useCallback(time => {
     const audio = audioRef.current
     if (audio && Number.isFinite(time) && Number.isFinite(audio.duration)) {
@@ -194,7 +218,7 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     }
   }, [persist, publish, report])
   const togglePlay = useCallback(() => {
-    if (audioRef.current?.paused) safePlay()
+    if (audioRef.current?.paused) void safePlay()
     else audioRef.current?.pause()
   }, [safePlay])
   const playItem = useCallback((item, newQueue = null, index = 0, resume) => {
@@ -204,7 +228,7 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     if (matching < 0) { publish({ error: 'The selected item is not in this queue.' }); return }
     visited.current = new Set()
     publish({ queue })
-    load(matching, true, resume)
+    void load(matching, true, resume, 'play-item')
   }, [load, publish])
   const setPreference = (key, value) => {
     const next = typeof value === 'function' ? value(model.current[key]) : value
@@ -224,7 +248,7 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     queue.splice(next ? s.index + 1 : queue.length, 0, next ? { ...item, _playNext: true } : item)
     visited.current = new Set()
     publish({ queue }); persist()
-    if (!s.activeItem) load(0, false, 0)
+    if (!s.activeItem) void load(0, false, 0, 'queue-initial')
   }
   const removeFromQueue = index => {
     const s = model.current
@@ -237,7 +261,7 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
       publish({ queue, index: 0, activeItem: null, isPlaying: false, currentTime: 0, duration: 0 })
     } else {
       publish({ queue, index: index < s.index ? s.index - 1 : Math.min(s.index, queue.length - 1) })
-      if (index === s.index) load(model.current.index, s.isPlaying, 0)
+      if (index === s.index) void load(model.current.index, s.isPlaying, 0, 'queue-removal')
     }
     persist()
   }
@@ -274,7 +298,7 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     }
     updatePositionState()
 
-    const actions = { play: safePlay, pause: () => audioRef.current?.pause(), nexttrack: () => handleNext(), previoustrack: handlePrev, seekto: d => seek(d.seekTime) }
+    const actions = { play: () => safePlay('PLAY_REQUEST'), pause: () => audioRef.current?.pause(), nexttrack: () => handleNext(false), previoustrack: handlePrev, seekto: d => seek(d.seekTime) }
     Object.entries(actions).forEach(([name, fn]) => { try { navigator.mediaSession.setActionHandler(name, fn) } catch { /* Platform-dependent action. */ } })
     return () => {
       Object.keys(actions).forEach(name => { try { navigator.mediaSession.setActionHandler(name, null) } catch { /* Platform-dependent action. */ } })

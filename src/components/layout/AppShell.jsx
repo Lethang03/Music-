@@ -102,7 +102,7 @@ export default function AppShell({ children }) {
           padding-bottom: calc(var(--player-height) + 32px + env(safe-area-inset-bottom));
           /* Custom scrollbar */
           scrollbar-width: thin;
-          scrollbar-color: rgba(255,255,255,0.1) transparent;
+          scrollbar-color: rgba(59,130,246,.42) transparent;
         }
         .v2-main-content::-webkit-scrollbar {
           width: 6px;
@@ -111,7 +111,7 @@ export default function AppShell({ children }) {
           background: transparent;
         }
         .v2-main-content::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.1);
+          background: linear-gradient(var(--sv-violet), var(--sv-cyan));
           border-radius: 3px;
         }
 

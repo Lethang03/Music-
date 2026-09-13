@@ -10,6 +10,7 @@ import { useLibrary } from '../../contexts/LibraryContext'
 import { mediaKey } from '../../lib/storage'
 import { useAudio } from '../../contexts/AudioContext'
 import TiltCard from '../ui/TiltCard'
+import SyncedLyrics, { parseSyncedLyrics } from './SyncedLyrics'
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 function formatTime(secs) {
@@ -32,6 +33,7 @@ function NowPlaying({ onClose, isClosing, activeItem, isPlaying, togglePlay,
   useDialog(dialogRef, onClose)
   const artworkUrl = activeItem?.image_url || activeItem?.cover_url || activeItem?.image
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+  const syncedLyrics = activeItem?.type !== 'episode' && !activeItem?.podcast_id && activeItem?.lyrics_type === 'synced' && parseSyncedLyrics(activeItem?.synced_lyrics).length > 0
 
   const RepeatIcon = repeat === 'one' ? Repeat1 : Repeat
 
@@ -206,9 +208,7 @@ function NowPlaying({ onClose, isClosing, activeItem, isPlaying, togglePlay,
                 </div>
               ) : (
                 <div className="v2-np-lyrics">
-                  <p style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '48px 0' }}>
-                    {activeItem?.lyrics || 'No lyrics available for this item.'}
-                  </p>
+                  {syncedLyrics ? <SyncedLyrics lyrics={activeItem.synced_lyrics} currentTime={currentTime} /> : <p style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '48px 0', whiteSpace: 'pre-wrap' }}>{activeItem?.lyrics || 'No lyrics available for this item.'}</p>}
                 </div>
               )}
             </div>
@@ -920,11 +920,11 @@ export default function GlobalPlayer() {
         .v2-ctrl-secondary.on { color: var(--accent-primary); opacity: 1; }
         .v2-ctrl-play {
           width: 32px; height: 32px; border-radius: 50%;
-          background: white; color: black; border: none;
+          background: var(--accent-gradient); color: var(--sv-text-primary); border: 1px solid rgba(255,255,255,.18);
           display: grid; place-items: center; cursor: pointer;
-          transition: transform 0.2s ease, background 0.2s ease; flex-shrink: 0;
+          transition: transform 0.2s ease, filter 0.2s ease; flex-shrink: 0; box-shadow: var(--sv-glow);
         }
-        .v2-ctrl-play:hover { transform: scale(1.08); background: #f0f0f0; }
+        .v2-ctrl-play:hover { transform: scale(1.08); filter:brightness(1.12); }
 
         /* Seek row */
         .v2-player-time-row {
@@ -944,7 +944,7 @@ export default function GlobalPlayer() {
         }
         .v2-player-seek:hover .v2-player-seek-track { background: rgba(255,255,255,0.15); }
         .v2-player-seek-fill {
-          height: 100%; background: var(--text-primary);
+          height: 100%; background: var(--accent-gradient);
           border-radius: 2px; position: relative;
           transition: background 0.2s ease;
         }
@@ -953,7 +953,7 @@ export default function GlobalPlayer() {
           position: absolute; right: -6px; top: 50%;
           transform: translateY(-50%) scale(0);
           width: 12px; height: 12px; border-radius: 50%;
-          background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+          background: var(--sv-cyan); box-shadow: 0 0 10px rgba(34,211,238,.45);
           transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .v2-player-seek:hover .v2-player-seek-thumb { transform: translateY(-50%) scale(1); }

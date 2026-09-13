@@ -13,13 +13,25 @@
 
 ### `music_tracks`
 - `id` (uuid, PK)
+- `owner_id` (uuid, FK to auth.users; nullable)
 - `title` (text)
 - `artist` (text)
 - `album` (text)
+- `genre` (text)
 - `audio_url` (text)
 - `cover_url` (text)
+- `image_url` (text, legacy artwork fallback)
 - `duration` (integer)
+- `release_date` (date)
+- `track_number` (integer)
+- `description` (text)
+- `explicit_content` (boolean)
+- `lyrics` (text, plain lyrics)
+- `lyrics_type` (text: `plain` or `synced`)
+- `synced_lyrics` (jsonb array)
+- `import_job_id` (uuid, FK to import_jobs; nullable)
 - `published` (boolean)
+- `created_at` (timestamp)
 
 ### `podcasts`
 - `id` (uuid, PK)
@@ -44,4 +56,3 @@
 - `name` (text)
 
 *(More tables mapped via Supabase as needed)*
-

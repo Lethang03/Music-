@@ -16,6 +16,8 @@ export default function TrackForm({ initialData, onSave, onCancel, busy }) {
     explicit_content: initialData?.explicit_content || false,
     description: initialData?.description || '',
     lyrics: initialData?.lyrics || '',
+    lyrics_type: initialData?.lyrics_type || 'plain',
+    synced_lyrics: initialData?.synced_lyrics ? JSON.stringify(initialData.synced_lyrics, null, 2) : '',
     published: initialData?.published || false,
     cover_url: initialData?.cover_url || '',
     audio_url: initialData?.audio_url || ''
@@ -114,6 +116,14 @@ export default function TrackForm({ initialData, onSave, onCancel, busy }) {
     if (audioMode === 'url' && !form.audio_url.trim() && !initialData?.audio_url) return alert("Audio URL is required")
     if (audioMode === 'upload' && !audioFile && !initialData?.audio_url) return alert("Audio File is required")
 
+    let syncedLyrics = null
+    if (form.lyrics_type === 'synced' && form.synced_lyrics.trim()) {
+      try {
+        syncedLyrics = JSON.parse(form.synced_lyrics)
+        if (!Array.isArray(syncedLyrics) || syncedLyrics.some(line => !line || !Number.isFinite(Number(line.start)) || !Number.isFinite(Number(line.end)) || Number(line.start) < 0 || Number(line.end) <= Number(line.start) || typeof line.text !== 'string' || !line.text.trim())) throw new Error()
+      } catch { return alert('Synced lyrics must be a JSON array of { start, end, text } lines with valid timestamps.') }
+    }
+
     const finalPublished = forcePublished !== undefined ? forcePublished : form.published;
 
     onSave({
@@ -121,6 +131,7 @@ export default function TrackForm({ initialData, onSave, onCancel, busy }) {
       published: finalPublished,
       newCoverFile: artworkMode === 'upload' ? coverFile : null,
       newAudioFile: audioMode === 'upload' ? audioFile : null,
+      synced_lyrics: syncedLyrics,
     })
   }
 
@@ -317,9 +328,10 @@ export default function TrackForm({ initialData, onSave, onCancel, busy }) {
               </div>
 
               <div className="v2-form-group">
-                <label>Lyrics</label>
-                <textarea rows="5" value={form.lyrics} onChange={e => setForm({...form, lyrics: e.target.value})} disabled={busy} placeholder="Optional lyrics..." className="v2-lyrics-input" />
+                <label>Lyrics format</label>
+                <select aria-label="lyrics type" value={form.lyrics_type} onChange={e => setForm({...form, lyrics_type: e.target.value})} disabled={busy}><option value="plain">Plain lyrics</option><option value="synced">Synced lyrics</option></select>
               </div>
+              {form.lyrics_type === 'synced' ? <div className="v2-form-group"><label>Synced lyrics JSON</label><textarea aria-label="synced lyrics" rows="9" value={form.synced_lyrics} onChange={e => setForm({...form, synced_lyrics: e.target.value})} disabled={busy} placeholder={'[\n  {"start": 0, "end": 5, "text": "lyrics line"}\n]'} className="v2-lyrics-input" /><small>Use seconds. Each line needs a start, end, and text.</small></div> : <div className="v2-form-group"><label>Lyrics</label><textarea rows="5" value={form.lyrics} onChange={e => setForm({...form, lyrics: e.target.value})} disabled={busy} placeholder="Optional lyrics..." className="v2-lyrics-input" /></div>}
             </div>
           )}
         </div>

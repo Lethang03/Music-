@@ -1,0 +1,7 @@
+.soundverse-logo { display:flex; align-items:center; gap:10px; min-width:0; color:var(--text-primary); }
+.soundverse-logo img { display:block; flex:0 0 auto; width:32px; height:32px; object-fit:contain; border-radius:8px; }
+.soundverse-logo__copy { display:flex; min-width:0; flex-direction:column; line-height:1.05; }
+.soundverse-logo__copy strong { font-size:1.25rem; font-weight:800; letter-spacing:-.02em; }
+.soundverse-logo__copy small { margin-top:4px; font-size:.62rem; color:var(--accent-primary); font-weight:700; letter-spacing:.18em; text-transform:uppercase; }
+.soundverse-logo--small img { width:28px; height:28px; border-radius:7px; }
+.soundverse-logo--large img { width:48px; height:48px; border-radius:12px; }

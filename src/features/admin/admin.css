@@ -3,18 +3,18 @@
   display: flex;
   height: 100%;
   width: 100%;
-  background-color: #0B0B13;
-  color: #fff;
+  background-color: var(--sv-bg-main);
+  color: var(--sv-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
   border-radius: 16px; /* Fit inside the shell's main content area beautifully */
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--sv-border);
 }
 
 .v2-admin-sidebar {
   width: 250px;
-  background: rgba(255, 255, 255, 0.03);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--sv-bg-secondary);
+  border-right: 1px solid var(--sv-border);
   display: flex;
   flex-direction: column;
 }
@@ -28,7 +28,7 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #FF33A6, #B833FF, #4433FF);
+  background: var(--sv-accent-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -48,7 +48,7 @@
   padding: 12px 16px;
   border-radius: 8px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   border: none;
   font-size: 0.95rem;
   font-weight: 600;
@@ -58,13 +58,13 @@
 }
 
 .v2-admin-nav-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  background: rgba(59,130,246,.10);
+  color: var(--text-primary);
 }
 
 .v2-admin-nav-item.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: rgba(59,130,246,.14);
+  color: var(--text-primary);
 }
 
 .v2-admin-sidebar-footer {
@@ -77,7 +77,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: radial-gradient(circle at top right, rgba(184, 51, 255, 0.05), transparent 40%), #0B0B13;
+  background: radial-gradient(circle at top right, rgba(124,58,237,.12), transparent 40%), var(--sv-bg-main);
 }
 
 .v2-admin-header {
@@ -87,7 +87,7 @@
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(11, 11, 19, 0.8);
+  background: rgba(5,7,13,.84);
   backdrop-filter: blur(10px);
 }
 
@@ -296,7 +296,7 @@
 }
 
 .v2-admin-btn-primary {
-  background: linear-gradient(135deg, #FF33A6, #B833FF);
+  background: var(--sv-accent-gradient);
   color: #fff;
   border: none;
   padding: 10px 20px;

@@ -14,6 +14,7 @@ export default defineConfig({
 
   server: {
     port: 3100,
+    watch: { ignored: ['**/audit/tmp/**', '**/test-results/**', '**/playwright-report/**'] },
   }
 
 })

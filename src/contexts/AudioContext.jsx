@@ -121,7 +121,7 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     // Keep one media instance under the provider's ownership. Besides avoiding
     // a rendered element being replaced outside the player lifecycle, this is
     // the instance exposed by window.Audio in the Playwright media fixture.
-    const audio = new Audio()
+    const audio = audioRef.current || new Audio()
     audioRef.current = audio
     audio.preload = 'metadata'
     audio.volume = clampVolume(model.current.volume)
@@ -204,7 +204,9 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
       window.removeEventListener('auth_signout', clearPlayer)
       window.removeEventListener('auth_cleared', clearPlayer)
       hardStop()
-      if (audioRef.current === audio) audioRef.current = null
+      // Keep the stopped instance for an effect restart (including StrictMode).
+      // All listeners and sources are cleared above; a real unmount releases
+      // the provider ref. Playback still has exactly one media owner.
     }
   }, [storageKey, diagnostic, handleNext, load, persist, publish, report])
   const seek = useCallback(time => {

@@ -25,7 +25,7 @@ export const queueUrl = async (source_url, source_type) => {
   return createImportJob({ source_type, source_url: validateSourceUrl(source_url), metadata: {} });
 }
 
-async function createImportJob(payload) {
+export async function createImportJob(payload) {
   // Validate the browser session before invoking the function. The function
   // independently validates the Authorization bearer token server-side.
   const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -43,6 +43,11 @@ async function createImportJob(payload) {
     throw new Error('The import service returned an invalid response.');
   }
 
+  if (typeof error?.context?.clone === 'function') {
+    let details
+    try { details = await error.context.clone().json() } catch { /* Use the SDK message for a non-JSON response. */ }
+    if (typeof details?.error === 'string') throw new Error(details.error)
+  }
   throw new Error(error?.message || 'The import service is unavailable.');
 }
 

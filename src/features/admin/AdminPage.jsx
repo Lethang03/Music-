@@ -15,7 +15,7 @@ export default function AdminPage() {
   // Open the content workspace first; it is the admin's primary CRUD surface.
   const [activeTab, setActiveTab] = useState('music_tracks')
 
-  if (!isAdmin) return <div className="v2-page"><p role="alert" className="v2-status-banner">Administrator access required.</p></div>
+  if (!isAdmin) return <div className="v2-page"><p role="alert" className="v2-status-banner">You do not have access to administration.</p></div>
 
   const renderContent = () => {
     switch (activeTab) {

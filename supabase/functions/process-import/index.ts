@@ -20,6 +20,12 @@ async function loadSource(admin: any, job: any): Promise<{ blob: Blob; contentTy
   throw new Error('Source redirected too many times.')
 }
 async function processJob(admin: any, job: any) {
+  if (job.source_type === 'podcast_episode_url') {
+    // Podcast extraction belongs to the existing long-running Docker worker.
+    // A legacy Edge polling invocation must not fail or consume that work.
+    await updateJob(admin, job, { status: 'pending', progress: 0, started_at: null })
+    return { id: job.id, status: 'pending', message: 'Awaiting Docker audio worker.' }
+  }
   try {
     log(job, 'claimed'); await updateJob(admin, job, { status: 'extracting', progress: 20 }); log(job, 'loading-source')
     const { blob, contentType } = await loadSource(admin, job); await updateJob(admin, job, { status: 'extracting', progress: 55 })

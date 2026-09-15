@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { validatePodcastSource } from './podcastSource.js'
 
 // Keep this in sync with the headers sent by supabase-js.  In particular,
 // browsers preflight the Authorization header before `functions.invoke()`.
@@ -8,7 +9,7 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Max-Age': '86400',
 }
-const allowedTypes = new Set(['upload', 'url', 'video'])
+const allowedTypes = new Set(['upload', 'url', 'video', 'podcast_episode_url'])
 
 function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
@@ -62,19 +63,40 @@ Deno.serve(async request => {
     }
 
     const sourceType = body.source_type
-    const sourceUrl = String(body.source_url || '').trim()
+    let sourceUrl = String(body.source_url || '').trim()
+    let podcastFields = {}
+    let metadata = body.metadata || {}
     if (!allowedTypes.has(sourceType)) return response({ error: 'Unsupported import type.' }, 400)
     if (sourceType === 'upload') {
       if (!/^storage:\/\/soundverse\/imports\/[0-9a-f-]+\/.+/.test(sourceUrl)) return response({ error: 'Invalid staged upload.' }, 400)
       if (!sourceUrl.includes(`/imports/${user.id}/`)) return response({ error: 'You can only import your own staged upload.' }, 403)
     } else validateExternalUrl(sourceUrl)
+    if (sourceType === 'podcast_episode_url') {
+      const source = validatePodcastSource(sourceUrl)
+      sourceUrl = source.source_url
+      if (!body.podcast_id || metadata.authorized !== true) return response({ error: 'Select a podcast and confirm permission to import this media.' }, 400)
+      const { data: podcast, error: podcastError } = await admin.from('podcasts').select('id,published').eq('id', body.podcast_id).single()
+      if (podcastError || !podcast) return response({ error: 'The selected podcast does not exist.' }, 400)
+      if (!podcast.published) return response({ error: 'Publish the selected podcast before importing an episode.' }, 400)
+      for (const field of ['episode_number', 'season_number']) if (metadata[field] != null && (!Number.isInteger(metadata[field]) || metadata[field] < 1)) return response({ error: 'Episode and season numbers must be positive whole numbers.' }, 400)
+      metadata = { authorized: true, title: String(metadata.title || '').slice(0,500), description: String(metadata.description || '').slice(0,20000), cover_url: metadata.cover_url ? String(metadata.cover_url) : null, episode_number: metadata.episode_number || null, season_number: metadata.season_number || null }
+      if (metadata.cover_url) validateExternalUrl(metadata.cover_url)
+      podcastFields = { podcast_id: podcast.id, source_platform: source.source_platform, source_id: source.source_id }
+      if (source.source_id) {
+        const { data: duplicate, error: lookupError } = await admin.from('episodes').select('id').eq('source_platform', source.source_platform).eq('source_id', source.source_id).maybeSingle()
+        if (lookupError) throw lookupError
+        if (duplicate) return response({ error: 'This source has already been imported as an episode.' }, 409)
+      }
+    }
     const { data, error } = await admin.from('import_jobs').insert({
       source_url: sourceUrl,
       source_type: sourceType,
       status: 'pending',
       created_by: user.id,
-      metadata: body.metadata || {},
+      metadata,
+      ...podcastFields,
     }).select().single()
+    if (error?.code === '23505') return response({ error: 'This source is already queued or imported.' }, 409)
     if (error) throw error
     // This function only validates and queues work. In particular, video jobs
     // must remain pending for the long-running Node audio worker; invoking the

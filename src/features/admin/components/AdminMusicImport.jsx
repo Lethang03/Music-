@@ -17,11 +17,11 @@ export default function AdminMusicImport() {
   const loadJobs = useCallback(async () => { 
     const { data, error: queryError } = await supabase.from('import_jobs').select('*').order('created_at', { ascending: false }).limit(50); 
     if (queryError) setError(queryError.message); 
-    else setJobs(data || []) 
+    else setJobs((data || []).filter(job => job.source_type !== 'podcast_episode_url'))
     try {
       const { data, error: queryError } = await supabase.from('import_jobs').select('*').order('created_at', { ascending: false }).limit(50); 
       if (queryError) throw queryError; 
-      setJobs(data || []) 
+      setJobs((data || []).filter(job => job.source_type !== 'podcast_episode_url'))
     } catch (err) {
       setError(err.message)
     }

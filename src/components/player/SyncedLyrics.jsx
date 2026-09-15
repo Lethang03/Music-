@@ -1,32 +1,41 @@
-import React, { useEffect, useMemo, useRef } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { parseSyncedLyrics, activeLyricIndex } from '../../lib/lyrics'
 import './SyncedLyrics.css'
 
 // Database JSON is deliberately validated at the UI boundary so a malformed
 // lyric payload can never take down the Now Playing view.
-export function parseSyncedLyrics(value) {
-  const rows = typeof value === 'string' ? (() => { try { return JSON.parse(value) } catch { return [] } })() : value
-  if (!Array.isArray(rows)) return []
-  return rows
-    .map(row => ({ start: Number(row?.start), end: Number(row?.end), text: typeof row?.text === 'string' ? row.text.trim() : '' }))
-    .filter(row => Number.isFinite(row.start) && Number.isFinite(row.end) && row.start >= 0 && row.end > row.start && row.text)
-    .sort((a, b) => a.start - b.start)
-}
+export { parseSyncedLyrics } from '../../lib/lyrics'
 
-export default function SyncedLyrics({ lyrics, currentTime }) {
+export default function SyncedLyrics({ lyrics, currentTime, seek }) {
   const lines = useMemo(() => parseSyncedLyrics(lyrics), [lyrics])
   const lineRefs = useRef([])
-  const activeIndex = lines.findIndex(line => currentTime >= line.start && currentTime < line.end)
+  const container = useRef(null)
+  const timer = useRef(null)
+  const [following, setFollowing] = useState(true)
+  const activeIndex = activeLyricIndex(lines, currentTime)
+  useEffect(() => () => clearTimeout(timer.current), [])
 
   useEffect(() => {
-    if (activeIndex >= 0) lineRefs.current[activeIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [activeIndex])
+    if (following && activeIndex >= 0 && container.current) {
+      const parent = container.current; const line = lineRefs.current[activeIndex]
+      if (line) parent.scrollTo({ top: line.offsetTop - parent.offsetTop - parent.clientHeight * .4, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    }
+  }, [activeIndex, following])
+  const pauseFollow = () => { setFollowing(false); clearTimeout(timer.current); timer.current = setTimeout(() => setFollowing(true), 5000) }
 
   if (!lines.length) return null
-  return <div className="v2-synced-lyrics" aria-live="polite" aria-label="Synced lyrics">
-    {lines.map((line, index) => <p
+  return <div className="lyrics-follow-panel">
+    <button className="lyrics-follow" aria-pressed={following} onClick={() => { clearTimeout(timer.current); setFollowing(true) }}>{following ? 'Following lyrics' : 'Follow Lyrics'}</button>
+    <div ref={container} className="v2-synced-lyrics" aria-label="Synced lyrics" tabIndex={0} onWheel={pauseFollow} onTouchMove={pauseFollow} onPointerDown={pauseFollow} onKeyDown={e => { if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(e.key)) pauseFollow() }}>
+    {lines.map((line, index) => <button
       key={`${line.start}-${index}`}
       ref={element => { lineRefs.current[index] = element }}
-      className={`v2-synced-lyric ${index === activeIndex ? 'active' : ''} ${activeIndex >= 0 && index < activeIndex ? 'past' : ''}`}
-    >{line.text}</p>)}
+      className={`v2-synced-lyric ${index === activeIndex ? 'active' : ''} ${currentTime >= line.end ? 'past' : ''}`}
+      aria-current={index === activeIndex ? 'true' : undefined}
+      aria-label={`Seek to ${line.start} seconds: ${line.text}`}
+      disabled={!seek}
+      onClick={() => seek?.(line.start)}
+    >{line.text}</button>)}
+    </div>
   </div>
 }

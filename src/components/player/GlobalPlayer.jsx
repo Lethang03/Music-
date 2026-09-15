@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, useMemo } from 'react'
 import {
   Play, Pause, SkipForward, SkipBack,
   Volume2, VolumeX, ListMusic, Shuffle, Repeat, Repeat1,
@@ -26,14 +26,15 @@ function NowPlaying({ onClose, isClosing, activeItem, isPlaying, togglePlay,
   handleNext, handlePrev, shuffle, setShuffle, repeat, setRepeat, queue, currentIndex }) {
 
   const { setCurrentIndex, removeFromQueue, reorderQueue } = useAudio()
-  const { favorites, toggleFavorite } = useLibrary()
+  const { favorites, toggleFavorite, tracks } = useLibrary()
   const liked = favorites.some(x => mediaKey(x) === mediaKey(activeItem))
   const [activeTab, setActiveTab] = useState('queue')
   const dialogRef = useRef(null)
   useDialog(dialogRef, onClose)
   const artworkUrl = activeItem?.image_url || activeItem?.cover_url || activeItem?.image
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
-  const syncedLyrics = activeItem?.type !== 'episode' && !activeItem?.podcast_id && activeItem?.lyrics_type === 'synced' && parseSyncedLyrics(activeItem?.synced_lyrics).length > 0
+  const lyricsItem = useMemo(() => activeItem?.type !== 'episode' && !activeItem?.podcast_id ? tracks.find(track => track.id === activeItem?.id) || activeItem : activeItem, [tracks, activeItem])
+  const syncedLyrics = useMemo(() => activeItem?.type !== 'episode' && !activeItem?.podcast_id && parseSyncedLyrics(lyricsItem?.synced_lyrics).length > 0, [activeItem, lyricsItem])
 
   const RepeatIcon = repeat === 'one' ? Repeat1 : Repeat
 
@@ -208,7 +209,7 @@ function NowPlaying({ onClose, isClosing, activeItem, isPlaying, togglePlay,
                 </div>
               ) : (
                 <div className="v2-np-lyrics">
-                  {syncedLyrics ? <SyncedLyrics lyrics={activeItem.synced_lyrics} currentTime={currentTime} /> : <p style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '48px 0', whiteSpace: 'pre-wrap' }}>{activeItem?.lyrics || 'No lyrics available for this item.'}</p>}
+                  {syncedLyrics ? <SyncedLyrics key={activeItem.id} lyrics={lyricsItem.synced_lyrics} currentTime={currentTime} seek={seek} /> : <p style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '48px 0', whiteSpace: 'pre-wrap' }}>{lyricsItem?.lyrics || 'Lyrics unavailable'}</p>}
                 </div>
               )}
             </div>

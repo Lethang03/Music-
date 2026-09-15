@@ -18,13 +18,32 @@ export async function setup(page, { signedIn = true, seconds = 12, admin = false
     music_tracks: catalog,
     podcasts: [{ id: podcastId, title: 'Fixture podcast', author: 'Host', description: 'A test podcast', category: 'Education', cover_url: art, published: true }],
     episodes: [1, 2, 3].map(n => ({ id: `44444444-4444-4444-8444-44444444444${n}`, podcast_id: podcastId, title: `Episode ${n}`, season_number: n === 3 ? 2 : 1, episode_number: n, audio_url: `http://127.0.0.1:3100/test-audio/episode${n}.wav?seconds=${seconds}`, duration: seconds, published: true })),
-    profiles: [{ id: userId, display_name: 'Listener', username: 'listener', bio: '', avatar_url: '', role: 'user' }], playlists: [], soundverse_activity: []
+    profiles: [{ id: userId, display_name: 'Listener', username: 'listener', bio: '', avatar_url: '', role: 'user' }], playlists: [], soundverse_activity: [], import_jobs: []
   }
   await page.route(url => url.hostname === 'soundverse-test.supabase.co', async route => {
     const req = route.request(), url = new URL(req.url())
     const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }
     const reply = (data, status = 200) => route.fulfill({ status, contentType: 'application/json', headers, body: JSON.stringify(data) })
     if (req.method() === 'OPTIONS') return reply({})
+    if (url.pathname.includes('/functions/v1/align-lyrics')) {
+      const body = req.postDataJSON() || {}
+      const rawLines = (body.lyrics || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+      const mockAligned = rawLines.map((text, i) => ({
+        line_index: i,
+        text,
+        start: i * 3.5,
+        end: i * 3.5 + 3.0,
+        confidence: 0.95
+      }))
+      return reply({
+        success: true,
+        source_url: body.source_url,
+        source_platform: 'youtube',
+        source_id: 'dQw4w9WgXcQ',
+        raw_alignment: mockAligned,
+        detected_duration: (body.duration || 12)
+      })
+    }
     if (url.pathname.includes('/auth/v1/')) {
       if (url.pathname.endsWith('/logout')) return fail === 'logout' ? reply({ message: 'Logout failed' }, 500) : reply({})
       if (url.pathname.endsWith('/signup')) return reply({ user, session: null })

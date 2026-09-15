@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   ChevronLeft, Play, Pause, Clock, Calendar,
   AlertCircle, RefreshCw, Mic
 } from 'lucide-react'
-import { supabase, supabaseReady } from '../../lib/supabase'
 import { useAudio } from '../../contexts/AudioContext'
 import { useLibrary } from '../../contexts/LibraryContext'
+import { orderEpisodes } from '../../lib/episodeOrder'
 
 import TiltCard from '../../components/ui/TiltCard'
 
@@ -45,7 +45,7 @@ function EpisodeRow({ episode, index, isPlaying, isActive, onPlay, progress }) {
       <div className="v2-ep-num">
         {isActive && isPlaying
           ? <span className="v2-ep-playing-anim" aria-label="Playing"><Pause size={16} fill="currentColor" /></span>
-          : <span className="v2-ep-index">{episode.episode_number ?? index + 1}</span>
+          : <span className="v2-ep-index">{index + 1}</span>
         }
       </div>
 
@@ -87,21 +87,14 @@ export default function PodcastDetail() {
   const navigate = useNavigate()
   const { podcasts, episodes: catalogEpisodes, loading, progress, error, loadPublicLibrary } = useLibrary()
   const { activeItem, isPlaying, playItem, togglePlay } = useAudio()
-  const [selectedSeason, setSelectedSeason] = useState(null)
-  useEffect(() => { setSelectedSeason(null) }, [id])
   const podcast = podcasts.find(p => p.id === id)
-  const episodes = catalogEpisodes.filter(e => e.podcast_id === id).sort((a, b) => (a.season_number || 0) - (b.season_number || 0) || (a.episode_number || 0) - (b.episode_number || 0) || (a.published_at || '').localeCompare(b.published_at || ''))
+  const episodes = orderEpisodes(catalogEpisodes.filter(e => e.podcast_id === id))
   const loadingPod = loading, loadingEps = loading
   const errorPod = !loading && !podcast ? 'Podcast not found or unavailable.' : null
   const errorEps = error && !episodes.length ? error : null
   const fetchEpisodes = loadPublicLibrary
 
-  const seasons = [...new Set(episodes.map(e => e.season_number).filter(s => s != null))].sort((a, b) => a - b)
-  const hasSeasons = seasons.length > 1
-
-  const displayedEpisodes = (selectedSeason != null && hasSeasons)
-    ? episodes.filter(e => e.season_number === selectedSeason)
-    : episodes
+  const displayedEpisodes = episodes
 
   // ── Play handler ───────────────────────────────────────────────────────
   const handlePlay = useCallback((episode, episodeIndex) => {
@@ -111,8 +104,8 @@ export default function PodcastDetail() {
       ...ep,
       // AudioContext reads: audio_url OR url, image_url OR cover_url OR image
       audio_url: ep.audio_url,
-      image_url: podcast?.image || podcast?.cover_url,
-      cover_url: podcast?.image || podcast?.cover_url,
+      image_url: ep.cover_url || podcast?.image || podcast?.cover_url,
+      cover_url: ep.cover_url || podcast?.image || podcast?.cover_url,
       artist: podcast?.author,
       album:  podcast?.title,
       type:   'episode',
@@ -172,7 +165,6 @@ export default function PodcastDetail() {
           {podcast.description && <p className="v2-pd-desc">{podcast.description}</p>}
           <div className="v2-pd-stats">
             <span>{episodes.length} tập</span>
-            {seasons.length > 0 && <span>· {seasons.length} mùa</span>}
           </div>
           {displayedEpisodes.length > 0 && (
             <button
@@ -185,29 +177,6 @@ export default function PodcastDetail() {
           )}
         </div>
       </header>
-
-      {/* Season tabs — only if multiple seasons */}
-      {hasSeasons && (
-        <div className="v2-filter-row" role="tablist" aria-label="Season filter">
-          <button
-            role="tab"
-            className={`v2-filter-pill ${selectedSeason === null ? 'active' : ''}`}
-            onClick={() => setSelectedSeason(null)}
-          >
-            Tất cả
-          </button>
-          {seasons.map(s => (
-            <button
-              key={s}
-              role="tab"
-              className={`v2-filter-pill ${selectedSeason === s ? 'active' : ''}`}
-              onClick={() => setSelectedSeason(s)}
-            >
-              Mùa {s}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Episodes */}
       <section className="v2-pd-episodes">

@@ -9,6 +9,7 @@ import { basename, dirname, extname, join } from 'node:path'
 import { createRequire } from 'node:module'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
+import { validatePodcastSource } from './podcastSource.js'
 
 const url = process.env.SUPABASE_URL
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -99,7 +100,18 @@ async function processJob(job) {
   await fs.mkdir(folder, { recursive: true })
   let audioPath
   try {
+    const podcastJob = job.source_type === 'podcast_episode_url'
+    let podcast = null
+    if (podcastJob) {
+      const source = validatePodcastSource(job.source_url)
+      if (source.source_platform !== job.source_platform || job.metadata?.authorized !== true) throw new Error('Invalid or unauthorized podcast source.')
+      job.source_url = source.source_url
+      const { data, error } = await supabase.from('podcasts').select('id,cover_url,published').eq('id', job.podcast_id).single()
+      if (error || !data?.published) throw new Error('The selected podcast is unavailable or unpublished.')
+      podcast = data
+    }
     let input; let info = job.metadata || {}
+    const stage = async (name, progress, status = 'extracting') => update(job, { status, progress, metadata: { ...job.metadata, stage: name } })
     log(job, 'Processing URL', { url: job.source_url })
     await ensureActive(job)
 
@@ -110,18 +122,36 @@ async function processJob(job) {
       if (error || !data) throw new Error(`Staged upload is unavailable: ${error?.message || 'not found'}`)
       input = join(folder, `source${extname(match[2]) || '.bin'}`)
       await fs.writeFile(input, Buffer.from(await data.arrayBuffer()))
-    } else if (job.source_type === 'video') {
+    } else if (job.source_type === 'video' || podcastJob) {
       log(job, 'Extracting audio', { url: job.source_url })
-      await update(job, { status: 'extracting', progress: 25 })
-      const ytdlpBaseArgs = ['--no-playlist', '--no-warnings', '--ffmpeg-location', ffmpeg]
+      await stage('Extracting', 25)
+      const ytdlpBaseArgs = ['--ignore-config', '--no-playlist', '--no-warnings', '--max-filesize', String(maxBytes), '--ffmpeg-location', ffmpeg]
       
       try {
         info = await run(ytDlp, [...ytdlpBaseArgs, '--dump-single-json', job.source_url], folder, true)
       } catch (err) {
         throw new Error(`Failed to extract video metadata: ${err.message}`)
       }
+      if (podcastJob) {
+        if (!info.id || !/^[\w-]+$/.test(String(info.id))) throw new Error('The source did not provide a valid video ID.')
+        const requested = validatePodcastSource(job.source_url)
+        if (requested.source_id && requested.source_id !== String(info.id)) throw new Error('The extracted video ID did not match the requested video.')
+        const canonical = validatePodcastSource(info.webpage_url || job.source_url)
+        if (canonical.source_platform !== job.source_platform || (canonical.source_id && canonical.source_id !== String(info.id))) throw new Error('The extracted source identity did not match the requested platform.')
+        job.source_id = String(info.id)
+        const { error: identityError } = await supabase.from('import_jobs').update({ source_id: job.source_id }).eq('id', job.id)
+        if (identityError && identityError.code !== '23505') throw identityError
+        const { data: duplicate, error: lookupError } = await supabase.from('episodes').select('id').eq('source_platform', job.source_platform).eq('source_id', job.source_id).maybeSingle()
+        if (lookupError) throw lookupError
+        if (duplicate) {
+          await update(job, { status: 'completed', progress: 100, episode_id: duplicate.id, completed_at: new Date().toISOString(), error_message: null })
+          return
+        }
+        if (identityError) throw new Error('This source is already being imported by another job.')
+      }
       
-      await update(job, { status: 'extracting', progress: 40, metadata: { ...job.metadata, title: info.title, artist: info.artist || info.uploader, album: info.album, genre: info.categories?.[0], thumbnail: info.thumbnail } })
+      await update(job, { status: 'extracting', progress: 40, metadata: { ...job.metadata, title: (podcastJob && job.metadata?.title) || info.title, artist: info.artist || info.uploader, album: info.album, genre: info.categories?.[0], thumbnail: info.thumbnail } })
+      await stage('Downloading', 40)
       
       try {
         await run(ytDlp, [...ytdlpBaseArgs, '--extract-audio', '--audio-format', 'mp3', '--audio-quality', '0', '--output', 'source.%(ext)s', job.source_url], folder)
@@ -138,19 +168,33 @@ async function processJob(job) {
     }
 
     log(job, 'Converting audio')
-    await update(job, { status: 'extracting', progress: 55 })
+    await stage('Converting', 55)
     const output = join(folder, 'processed.mp3')
     await run(ffmpeg, ['-y', '-i', input, '-vn', '-codec:a', 'libmp3lame', '-b:a', '192k', '-ar', '44100', '-ac', '2', output], folder)
     const duration = await durationSeconds(output, job)
-    const title = info.title || basename(job.source_url).replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ') || 'Imported Track'
-    const metadata = { ...job.metadata, ...info, title, artist: info.artist || info.uploader || job.metadata?.artist || 'Unknown Artist', duration }
+    const title = (podcastJob ? job.metadata?.title?.trim() : null) || info.title || (podcastJob ? 'Imported Episode' : basename(job.source_url).replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ') || 'Imported Track')
+    const metadata = podcastJob ? { ...job.metadata, title, source_title: info.title, source_author: info.uploader, thumbnail: info.thumbnail, duration } : { ...job.metadata, ...info, title, artist: info.artist || info.uploader || job.metadata?.artist || 'Unknown Artist', duration }
+    if ((await fs.stat(output)).size > maxBytes) throw new Error('Converted audio exceeds the import limit.')
 
-    await update(job, { status: 'uploading', progress: 70, metadata })
-    audioPath = `audio/imports/${job.id}-${safeName(title)}.mp3`
+    await update(job, { status: 'uploading', progress: 70, metadata: { ...metadata, stage: 'Uploading' } })
+    audioPath = podcastJob ? `audio/podcasts/${job.podcast_id}/${job.source_platform}-${job.source_id}.mp3` : `audio/imports/${job.id}-${safeName(title)}.mp3`
     log(job, 'Uploading file', { path: audioPath })
     const { error: uploadError } = await supabase.storage.from('soundverse').upload(audioPath, createReadStream(output), { contentType: 'audio/mpeg', upsert: false })
     if (uploadError && !/already exists/i.test(uploadError.message)) throw new Error(`Audio upload failed: ${uploadError.message}`)
     const audioUrl = supabase.storage.from('soundverse').getPublicUrl(audioPath).data.publicUrl
+    if (podcastJob) {
+      await update(job, { status: 'uploading', progress: 90, metadata: { ...metadata, stage: 'Creating Episode' } })
+      const payload = { podcast_id: job.podcast_id, title, description: job.metadata?.description?.trim() || info.description || '', cover_url: job.metadata?.cover_url || info.thumbnail || podcast.cover_url || null, audio_url: audioUrl, duration: duration || Math.round(Number(info.duration) || 0), episode_number: job.metadata?.episode_number || null, season_number: job.metadata?.season_number || null, published: true, published_at: new Date().toISOString(), source_platform: job.source_platform, source_id: job.source_id, source_url: info.webpage_url || job.source_url, source_author: info.uploader || info.creator || null, import_job_id: job.id }
+      let { data: episode, error: episodeError } = await supabase.from('episodes').insert(payload).select('id').single()
+      if (episodeError?.code === '23505') {
+        const result = await supabase.from('episodes').select('id').eq('source_platform', job.source_platform).eq('source_id', job.source_id).single()
+        episode = result.data; episodeError = result.error
+      }
+      if (episodeError || !episode) throw new Error('Unable to create the podcast episode.')
+      await update(job, { status: 'completed', progress: 100, episode_id: episode.id, metadata: { title, duration, source_author: payload.source_author }, completed_at: new Date().toISOString(), error_message: null })
+      log(job, 'Completed', { episode_id: episode.id })
+      return
+    }
 
     await update(job, { status: 'uploading', progress: 90, metadata })
     // The unique import_job_id index makes a crash/retry unable to create duplicate tracks.
@@ -169,7 +213,8 @@ async function processJob(job) {
   } catch (error) {
     log(job, 'Failed', { error: String(error.message || error) })
     if (error.message !== 'Import cancelled.') {
-      const { error: saveError } = await supabase.from('import_jobs').update({ status: 'failed', progress: 0, error_message: String(error.message).slice(0, 1000), completed_at: new Date().toISOString() }).eq('id', job.id).neq('status', 'cancelled')
+      const publicMessage = job.source_type === 'podcast_episode_url' ? 'Episode import failed. Check that the video is publicly accessible, supported and authorized, then retry. See server logs for details.' : String(error.message).slice(0, 1000)
+      const { error: saveError } = await supabase.from('import_jobs').update({ status: 'failed', progress: 0, error_message: publicMessage, completed_at: new Date().toISOString() }).eq('id', job.id).neq('status', 'cancelled')
       if (saveError) console.error(`Unable to mark job ${job.id} failed:`, saveError.message)
     }
   } finally {

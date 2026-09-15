@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabase'
 import { uploadMedia } from '../../../lib/upload'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useLibrary } from '../../../contexts/LibraryContext'
+import { nextEpisodeNumber } from '../../../lib/episodeOrder'
 
 export default function AdminEpisodes() {
   const { session } = useAuth()
@@ -63,6 +64,12 @@ export default function AdminEpisodes() {
 
       if (!finalAudio) throw new Error("Audio URL or file is required")
       if (!form.podcast_id) throw new Error("Please select a podcast")
+      let episodeNumber = form.episode_number ? Number(form.episode_number) : null
+      if (!form.id && episodeNumber == null) {
+        const { data, error: numberError } = await supabase.from('episodes').select('episode_number').eq('podcast_id', form.podcast_id)
+        if (numberError) throw numberError
+        episodeNumber = nextEpisodeNumber(data || [])
+      }
 
       const payload = {
         title: form.title.trim(),
@@ -71,7 +78,7 @@ export default function AdminEpisodes() {
         audio_url: finalAudio,
         duration: form.duration ? Number(form.duration) : null,
         season_number: form.season_number ? Number(form.season_number) : null,
-        episode_number: form.episode_number ? Number(form.episode_number) : null,
+        episode_number: episodeNumber,
         published: !!form.published
       }
 
@@ -254,4 +261,3 @@ export default function AdminEpisodes() {
     </div>
   )
 }
-

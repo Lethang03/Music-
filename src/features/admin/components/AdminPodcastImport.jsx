@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { UploadCloud, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
+import PodcastUrlImport from './PodcastUrlImport'
+import './PodcastImport.css'
+import { isValidEpisodeNumber, numberImportedEpisodes } from '../../../lib/episodeOrder'
 
 class PodcastImportQueueManager {
   constructor(onUpdate) {
@@ -83,14 +86,18 @@ class PodcastImportQueueManager {
         author,
         cover_url,
         published: true, // We auto-publish the podcast shell
-        owner_id: session?.user?.id
+        owner_id: session?.user?.id,
+        rss_feed_url: job.url
       }
 
-      const { data: podcastData, error: podcastError } = await supabase
-        .from('podcasts')
-        .insert(podcastPayload)
-        .select()
-        .single()
+      let { data: podcastData, error: podcastError } = await supabase
+        .from('podcasts').select('id').eq('rss_feed_url', job.url).maybeSingle()
+      if (podcastError) throw podcastError
+      if (!podcastData) {
+        const result = await supabase.from('podcasts').insert(podcastPayload).select().single()
+        podcastData = result.data
+        podcastError = result.error
+      }
 
       if (podcastError) throw podcastError
 
@@ -121,6 +128,7 @@ class PodcastImportQueueManager {
 
         const season = item.querySelector('itunes\\:season, season')?.textContent
         const epNum = item.querySelector('itunes\\:episode, episode')?.textContent
+        const publishedAt = item.querySelector('pubDate, published')?.textContent
 
         if (audioUrl) {
           episodePayloads.push({
@@ -129,22 +137,32 @@ class PodcastImportQueueManager {
             description: epDesc,
             audio_url: audioUrl, // Point directly to original source URL
             duration: isNaN(duration) ? null : duration,
-            season_number: season ? Number(season) : null,
-            episode_number: epNum ? Number(epNum) : null,
+            season_number: isValidEpisodeNumber(Number(season)) ? Number(season) : null,
+            episode_number: isValidEpisodeNumber(Number(epNum)) ? Number(epNum) : null,
+            published_at: publishedAt && !Number.isNaN(Date.parse(publishedAt)) ? new Date(publishedAt).toISOString() : undefined,
+            source_url: audioUrl,
             published: true // publish immediately
           })
         }
       }
 
-      if (episodePayloads.length > 0) {
-        const { error: epsError } = await supabase.from('episodes').insert(episodePayloads)
+      const { data: existingEpisodes, error: existingError } = await supabase
+        .from('episodes').select('episode_number, source_url').eq('podcast_id', podcastData.id)
+      if (existingError) throw existingError
+      const existingSources = new Set((existingEpisodes || []).map(episode => episode.source_url).filter(Boolean))
+      const newEpisodes = numberImportedEpisodes(
+        episodePayloads.filter(episode => !existingSources.has(episode.source_url)),
+        existingEpisodes || []
+      )
+      if (newEpisodes.length > 0) {
+        const { error: epsError } = await supabase.from('episodes').insert(newEpisodes)
         if (epsError) throw epsError
       }
 
       this.updateJob(job.id, { 
         status: 'Completed', 
         progress: 100,
-        metadata: { title, episodesCount: episodePayloads.length }
+        metadata: { title, episodesCount: newEpisodes.length }
       })
     } catch (err) {
       console.error(err)
@@ -154,6 +172,7 @@ class PodcastImportQueueManager {
 }
 
 export default function AdminPodcastImport() {
+  const [tab, setTab] = useState('rss')
   const [url, setUrl] = useState('')
   const [queue, setQueue] = useState([])
   const queueManager = useRef(null)
@@ -172,17 +191,24 @@ export default function AdminPodcastImport() {
   }
 
   return (
-    <div className="v2-admin-section-page">
+    <div className="v2-admin-section-page podcast-import-page">
       <div className="v2-admin-header-inline">
         <h2>Import Podcast</h2>
-        <p>Import podcast and episodes via RSS feed URL.</p>
+        <p>Import an RSS feed or an authorized TikTok / YouTube episode.</p>
       </div>
 
+      <div className="podcast-import-tabs" role="group" aria-label="Podcast import source">
+        <button id="podcast-rss-tab" type="button" aria-pressed={tab === 'rss'} aria-controls="podcast-import-panel" onClick={() => setTab('rss')}>RSS Feed</button>
+        <button id="podcast-video-tab" type="button" aria-pressed={tab === 'video'} aria-controls="podcast-import-panel" onClick={() => setTab('video')}>TikTok / YouTube</button>
+      </div>
+      <div id="podcast-import-panel" role="region" aria-labelledby={tab === 'video' ? 'podcast-video-tab' : 'podcast-rss-tab'}>
+      {tab === 'video' ? <PodcastUrlImport/> : <>
       <div className="v2-admin-import-card">
         <form onSubmit={handleImport} className="v2-admin-import-form">
           <div className="v2-form-group flex-1">
-            <label>RSS Feed URL</label>
+            <label htmlFor="podcast-rss-url">RSS Feed URL</label>
             <input 
+              id="podcast-rss-url"
               type="url" 
               placeholder="https://anchor.fm/s/12345/podcast/rss" 
               value={url} 
@@ -230,7 +256,8 @@ export default function AdminPodcastImport() {
           </div>
         )}
       </div>
+      </>}
+      </div>
     </div>
   )
 }
-

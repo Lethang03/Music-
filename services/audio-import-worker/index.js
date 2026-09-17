@@ -4,13 +4,25 @@ import { tmpdir } from 'node:os'
 import { join, basename, extname } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
+import { createStorageProvider } from '../../src/services/storage/providerFactory.js'
+
+async function computeFileHash(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha256')
+    const stream = createReadStream(filePath)
+    stream.on('data', chunk => hash.update(chunk))
+    stream.on('end', () => resolve(hash.digest('hex')))
+    stream.on('error', reject)
+  })
+}
 
 const url = process.env.SUPABASE_URL
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.')
 const supabase = createClient(url, key, { auth: { persistSession: false } })
+const storageProvider = createStorageProvider(supabase, process.env.STORAGE_PROVIDER || process.env.VITE_STORAGE_PROVIDER)
 const pollMs = Number(process.env.IMPORT_POLL_MS || 3000)
 const maxBytes = Number(process.env.MAX_IMPORT_BYTES || 524288000)
 const audioExtensions = /\.(mp3|wav|m4a|aac|ogg|opus|flac|webm)$/i
@@ -56,7 +68,7 @@ async function process(job) {
     if (job.source_type === 'upload') {
       const [, , bucket, ...parts] = job.source_url.split('/')
       const storagePath = parts.join('/')
-      const { data, error } = await supabase.storage.from(bucket).download(storagePath)
+      const { data, error } = await storageProvider.downloadFile(bucket, storagePath)
       if (error) throw new Error(`Staged upload is unavailable: ${error.message}`)
       input = join(folder, `source${extname(storagePath) || '.bin'}`); await fs.writeFile(input, Buffer.from(await data.arrayBuffer()))
     } else if (job.source_type === 'video') {
@@ -69,22 +81,39 @@ async function process(job) {
       input = join(folder, `source${suffix}`); await download(job.source_url, input)
     }
     await update(job, { progress: 48 })
-    const output = join(folder, 'processed.mp3')
-    await run('ffmpeg', ['-y', '-i', input, '-vn', '-codec:a', 'libmp3lame', '-b:a', '192k', '-ar', '44100', '-ac', '2', output], folder)
+    const bitrate = (job.podcast_id || job.source_type === 'podcast_episode_url') ? '112k' : '160k'
+    await run('ffmpeg', ['-y', '-i', input, '-vn', '-codec:a', 'libmp3lame', '-b:a', bitrate, '-ar', '44100', '-ac', '2', output], folder)
     const duration = await durationSeconds(output)
     const title = info.title || basename(job.source_url).replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ') || 'Imported Track'
-    const metadata = { ...job.metadata, ...info, title, artist: info.artist || info.uploader || job.metadata?.artist || 'Unknown Artist', duration }
-    await update(job, { status: 'uploading', progress: 70, metadata })
-    const audioPath = `audio/imports/${job.id}-${safeName(title)}.mp3`
-    const { error: audioError } = await supabase.storage.from('soundverse').upload(audioPath, createReadStream(output), { contentType: 'audio/mpeg', upsert: false })
-    if (audioError) throw new Error(`Audio upload failed: ${audioError.message}`)
-    const { data: publicAudio } = supabase.storage.from('soundverse').getPublicUrl(audioPath)
+    const stat = await fs.stat(output)
+    const fileSize = stat.size
+    const audioHash = await computeFileHash(output)
+
+    let audioUrl = null
+    const { data: matchedTrack } = await supabase.from('music_tracks').select('audio_url').eq('audio_hash', audioHash).not('audio_url', 'is', null).limit(1).maybeSingle()
+    if (matchedTrack?.audio_url) {
+      audioUrl = matchedTrack.audio_url
+    } else {
+      const { data: matchedEpisode } = await supabase.from('episodes').select('audio_url').eq('audio_hash', audioHash).not('audio_url', 'is', null).limit(1).maybeSingle()
+      if (matchedEpisode?.audio_url) audioUrl = matchedEpisode.audio_url
+    }
+
+    if (!audioUrl) {
+      await update(job, { status: 'uploading', progress: 70 })
+      const audioPath = `audio/imports/${job.id}-${safeName(title)}.mp3`
+      const { error: audioError } = await storageProvider.uploadFile('soundverse', audioPath, createReadStream(output), { contentType: 'audio/mpeg', cacheControl: '31536000, immutable', upsert: false })
+      if (audioError) throw new Error(`Audio upload failed: ${audioError.message}`)
+      const { data: publicAudio } = storageProvider.getPublicUrl('soundverse', audioPath)
+      audioUrl = publicAudio.publicUrl
+    }
+
     let coverUrl = job.metadata?.cover_url || null
     if (info.thumbnail) {
-      try { const cover = join(folder, 'cover.jpg'); await download(info.thumbnail, cover); const coverPath = `covers/imports/${job.id}.jpg`; const { error } = await supabase.storage.from('soundverse').upload(coverPath, createReadStream(cover), { contentType: 'image/jpeg' }); if (!error) coverUrl = supabase.storage.from('soundverse').getPublicUrl(coverPath).data.publicUrl } catch { /* cover is optional */ }
+      try { const cover = join(folder, 'cover.jpg'); await download(info.thumbnail, cover); const coverPath = `covers/imports/${job.id}.jpg`; const { error } = await storageProvider.uploadFile('soundverse', coverPath, createReadStream(cover), { contentType: 'image/jpeg', cacheControl: '31536000, immutable' }); if (!error) coverUrl = storageProvider.getPublicUrl('soundverse', coverPath).data.publicUrl } catch { /* cover is optional */ }
     }
+    const metadata = { ...job.metadata, ...info, title, artist: info.artist || info.uploader || job.metadata?.artist || 'Unknown Artist', duration, audio_hash: audioHash, file_size: fileSize }
     await update(job, { progress: 90, metadata })
-    const { data: track, error: trackError } = await supabase.from('music_tracks').insert({ title, artist: metadata.artist, album: metadata.album || null, genre: metadata.genre || null, cover_url: coverUrl, audio_url: publicAudio.publicUrl, duration, published: true, owner_id: job.created_by }).select().single()
+    const { data: track, error: trackError } = await supabase.from('music_tracks').insert({ title, artist: metadata.artist, album: metadata.album || null, genre: metadata.genre || null, cover_url: coverUrl, audio_url: audioUrl, duration, published: true, owner_id: job.created_by, audio_hash: audioHash, file_size: fileSize, audio_mime_type: 'audio/mpeg' }).select().single()
     if (trackError) throw new Error(`Track creation failed: ${trackError.message}`)
     await supabase.from('import_jobs').update({ status: 'completed', progress: 100, track_id: track.id, metadata, completed_at: new Date().toISOString(), error_message: null }).eq('id', job.id)
   } catch (error) {

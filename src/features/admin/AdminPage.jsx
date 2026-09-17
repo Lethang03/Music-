@@ -31,7 +31,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="v2-page" style={{ padding: 0, overflow: 'hidden' }}>
+    <div className="v2-page admin-page">
       <AdminLayout activeTab={activeTab} onTabChange={setActiveTab}>
         {renderContent()}
       </AdminLayout>

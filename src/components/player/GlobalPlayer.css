@@ -1,0 +1,44 @@
+/* Persistent mini player. Geometry shares the shell's bottom-space tokens. */
+.v2-player-bar { position:fixed; bottom:0; left:0; right:0; height:var(--player-height); z-index:50; display:flex; flex-direction:column; background:var(--bg-glass); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-top:1px solid var(--border-strong); box-shadow:0 -4px 24px #0004; }
+.v2-player-inner { flex:1; display:grid; grid-template-columns:minmax(0,1fr) minmax(250px,1.25fr) minmax(0,1fr); align-items:center; padding:0 24px; gap:24px; min-height:0; }
+.v2-player-info { display:flex; align-items:center; gap:14px; min-width:0; }
+.v2-player-art { width:52px; height:52px; border-radius:12px; overflow:hidden; position:relative; flex-shrink:0; cursor:pointer; }
+.v2-player-art img { width:100%; height:100%; object-fit:cover; }
+.v2-player-art-hover { position:absolute; inset:0; background:#0008; display:grid; place-items:center; opacity:0; transition:opacity .2s; }
+.v2-player-art:hover .v2-player-art-hover { opacity:1; }
+.v2-player-track-text { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.v2-player-track-text strong,.v2-player-track-text small { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.v2-player-track-text strong { font-size:.88rem; font-weight:600; }
+.v2-player-track-text small { font-size:.75rem; color:var(--text-secondary); }
+.v2-liked { color:var(--accent-primary); fill:currentColor; }
+.v2-player-center { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; width:100%; min-width:0; }
+.v2-player-controls { display:flex; align-items:center; gap:12px; }
+.v2-ctrl-btn,.v2-ctrl-secondary,.v2-icon-btn { display:grid; place-items:center; flex-shrink:0; min-width:36px; min-height:36px; border-radius:50%; background:none; color:var(--text-secondary); cursor:pointer; transition:color .2s,background .2s; }
+.v2-ctrl-btn:hover,.v2-ctrl-secondary:hover,.v2-icon-btn:hover { color:var(--text-primary); background:var(--bg-panel-hover); }
+.v2-ctrl-secondary.on { color:var(--accent-primary); }
+.v2-ctrl-play { display:grid; place-items:center; width:36px; height:36px; border-radius:50%; background:var(--accent-gradient); color:var(--sv-text-primary); box-shadow:var(--sv-glow); cursor:pointer; flex-shrink:0; }
+.v2-player-time-row { display:flex; align-items:center; gap:8px; width:100%; }
+.v2-player-time { font-size:.68rem; color:var(--text-secondary); font-variant-numeric:tabular-nums; width:38px; text-align:center; }
+.v2-player-seek { flex:1; height:16px; display:flex; align-items:center; cursor:pointer; }
+.v2-player-seek-track { width:100%; height:3px; background:var(--border-strong); border-radius:8px; }
+.v2-player-seek-fill { position:relative; height:100%; background:var(--accent-gradient); border-radius:8px; }
+.v2-player-seek-thumb { position:absolute; right:-5px; top:50%; transform:translateY(-50%); width:10px; height:10px; border-radius:50%; background:var(--sv-cyan); opacity:0; }
+.v2-player-seek:hover .v2-player-seek-thumb,.v2-player-seek:focus-visible .v2-player-seek-thumb { opacity:1; }
+.v2-player-right,.v2-volume-row { display:flex; align-items:center; gap:8px; }
+.v2-player-right { justify-content:flex-end; }
+.v2-volume-slider { appearance:none; -webkit-appearance:none; width:90px; height:4px; border-radius:8px; background:var(--border-strong); cursor:pointer; accent-color:var(--sv-cyan); }
+.v2-volume-slider::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--sv-cyan); }
+.v2-volume-slider::-moz-range-thumb { width:12px; height:12px; border:0; border-radius:50%; background:var(--sv-cyan); }
+.v2-player-error { position:absolute; bottom:calc(100% + 8px); left:12px; right:12px; max-height:120px; overflow:auto; padding:12px; border-radius:12px; background:var(--sv-bg-elevated); color:var(--sv-text-primary); border:1px solid var(--sv-danger); font-size:.8rem; }
+.v2-mobile-only { display:none; }
+.v2-player-progress-strip { position:absolute; top:0; left:10px; right:10px; height:3px; background:var(--border-subtle); cursor:pointer; overflow:hidden; }
+.v2-player-progress-fill { height:100%; background:var(--accent-gradient); }
+
+@media (max-width: 768px) {
+  .v2-player-bar {
+    bottom: calc(var(--mobile-nav-height) + var(--safe-bottom));
+    height: var(--player-height-mobile);
+  }
+}
+
+

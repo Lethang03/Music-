@@ -1,13 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
-let url = ''
-let key = ''
-try {
-  url = (import.meta.env.VITE_SUPABASE_URL || '').trim()
-  key = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
-} catch {
-  url = (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL || '').trim()
-  key = (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY || '').trim()
-}
+const env = (typeof import.meta !== 'undefined' && import.meta?.env) ? import.meta.env : (typeof process !== 'undefined' ? process.env : {})
+const url = env.VITE_SUPABASE_URL?.trim()
+const key = env.VITE_SUPABASE_ANON_KEY?.trim()
 let configurationError = ''
 try {
   if (!url || !key || !['https:', 'http:'].includes(new URL(url).protocol)) throw new Error()

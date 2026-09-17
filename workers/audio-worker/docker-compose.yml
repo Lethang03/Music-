@@ -1,6 +1,8 @@
 services:
   audio-worker:
-    build: .
+    build:
+      context: ../..
+      dockerfile: workers/audio-worker/Dockerfile
     env_file: .env
     restart: unless-stopped
     init: true

@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase, supabaseReady, configurationError } from '../lib/supabase'
+import { useConnectivity } from './ConnectivityContext'
 const AuthContext = createContext()
 export function AuthProvider({ children }) {
+  const { recoveryAttempt } = useConnectivity()
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -63,7 +65,7 @@ export function AuthProvider({ children }) {
       if (!cancelled) { setProfile(fallback); setError('Your profile could not be loaded. Please retry from Profile.') }
     }).finally(() => { clearTimeout(timer); if (!cancelled) { setLoading(false); setProfileLoading(false) } })
     return () => { cancelled = true; controller.abort(); clearTimeout(timer) }
-  }, [userId, profileAttempt])
+  }, [userId, profileAttempt, recoveryAttempt])
   const signOut = async () => {
     // Attempt graceful audio pause before unmount
     const pending = []

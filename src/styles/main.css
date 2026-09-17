@@ -266,7 +266,7 @@ a {
 }
 
 /* Shared forms, feedback and collection controls. */
-.v2-page { min-width: 0; }
+.v2-page { min-width: 0; display:flex; flex-direction:column; gap:32px; }
 .v2-section { min-width: 0; }
 .v2-section-hdr, .v2-action-row { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
 .v2-section-hdr { justify-content:space-between; }
@@ -317,7 +317,7 @@ html[data-theme=light] .v2-np-fullscreen { --text-primary:#fff; --text-secondary
  .v2-setting-item { flex-wrap:wrap; padding:16px; }
  .v2-modal-content { padding:20px; }
  .v2-action-row > * { padding:12px 18px; }
- .v2-topbar-right { flex:0 0 auto !important; margin-left:8px; gap:4px !important; }
+ .v2-topbar-right { flex:0 0 auto; }
 }
 @media(prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; } }
 @media(max-width:768px) {

@@ -1,0 +1,9 @@
+{
+  "foregroundNext": "PASS",
+  "backgroundNext": "PASS",
+  "lockedNextKeyevent": "FAIL",
+  "lockedNextMediaService": "PASS",
+  "previous": "PASS",
+  "pauseResume": "PASS",
+  "autoNextLocked": "PASS"
+}

@@ -29,6 +29,7 @@ export default function AdminLayout({ children, activeTab, onTabChange }) {
             return (
               <button 
                 key={n.id} 
+                aria-pressed={activeTab === n.id}
                 className={`v2-admin-nav-item ${activeTab === n.id ? 'active' : ''}`}
                 onClick={() => onTabChange(n.id)}
               >
@@ -73,12 +74,13 @@ export default function AdminLayout({ children, activeTab, onTabChange }) {
       </div>
 
       {/* Mobile Nav (Bottom) */}
-      <nav className="v2-admin-mobile-nav">
+      <nav className="v2-admin-mobile-nav" aria-label="Admin sections">
         {navs.map(n => {
           const Icon = n.icon
           return (
             <button 
               key={n.id} 
+              aria-pressed={activeTab === n.id}
               className={`v2-admin-mobile-item ${activeTab === n.id ? 'active' : ''}`}
               onClick={() => onTabChange(n.id)}
             >
@@ -91,4 +93,3 @@ export default function AdminLayout({ children, activeTab, onTabChange }) {
     </div>
   )
 }
-

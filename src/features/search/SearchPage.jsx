@@ -1,3 +1,4 @@
+import { mediaProvider } from '../../services/media'
 import React, { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search as SearchIcon, Play } from 'lucide-react'
@@ -47,7 +48,7 @@ export default function SearchPage() {
               <div className="v2-list">
                 {filteredTracks.map((track, i) => (
                   <div key={track.id} className="v2-list-item" role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && playItem(track, filteredTracks, i)} onClick={() => playItem(track, filteredTracks, i)}>
-                    <img src={track.image_url || track.cover_url} alt="" />
+                    <img src={mediaProvider.getCoverUrl(track.image_url || track.cover_url)} alt="" loading="lazy" decoding="async" />
                     <div className="v2-list-item-info">
                       <strong>{track.title}</strong>
                       <small>{track.artist}</small>
@@ -68,7 +69,7 @@ export default function SearchPage() {
                       className="v2-card" role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && navigate(`/podcasts/${podcast.id}`)}
                       onClick={() => navigate(`/podcasts/${podcast.id}`)}
                     >
-                      <div className="v2-card-img"><img src={podcast.image || podcast.cover_url} alt="" /></div>
+                      <div className="v2-card-img"><img src={mediaProvider.getCoverUrl(podcast.image || podcast.cover_url)} alt="" loading="lazy" decoding="async" /></div>
                       <div className="v2-card-info">
                         <strong>{podcast.title}</strong>
                         <small>{podcast.author}</small>

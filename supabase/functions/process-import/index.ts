@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createSupabaseStorageProvider, type EdgeStorageProvider } from '../_shared/storageProvider.ts'
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
 const MAX_IMPORT_BYTES = 500 * 1024 * 1024
@@ -12,14 +13,15 @@ function contentTypeFor(extension: string, received: string | null) { if (receiv
 function assertPublicHttpUrl(value: string) { const parsed = new URL(value); if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Only HTTP and HTTPS source URLs are supported.'); const host = parsed.hostname.toLowerCase(); if (host === 'localhost' || host.endsWith('.local') || /^127\.|^10\.|^192\.168\.|^169\.254\.|^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) throw new Error('Private-network source URLs are blocked.'); return parsed }
 async function ensureNotCancelled(admin: any, jobId: string) { const { data, error } = await admin.from('import_jobs').select('status').eq('id', jobId).single(); if (error) throw error; if (data.status === 'cancelled') throw new Error('Import cancelled.') }
 async function updateJob(admin: any, job: { id: string }, values: Record<string, unknown>) { const { error } = await admin.from('import_jobs').update(values).eq('id', job.id).neq('status', 'cancelled'); if (error) throw error; await ensureNotCancelled(admin, job.id) }
-async function loadSource(admin: any, job: any): Promise<{ blob: Blob; contentType: string | null }> {
-  if (job.source_type === 'upload') { const match = /^storage:\/\/([^/]+)\/(.+)$/.exec(job.source_url); if (!match) throw new Error('Invalid staged upload URL.'); const { data, error } = await admin.storage.from(match[1]).download(match[2]); if (error || !data) throw new Error(`Staged upload is unavailable: ${error?.message || 'not found'}`); if (data.size > MAX_IMPORT_BYTES) throw new Error('Source exceeds the 500 MB import limit.'); return { blob: data, contentType: data.type || null } }
+async function loadSource(storageProvider: EdgeStorageProvider, job: any): Promise<{ blob: Blob; contentType: string | null }> {
+  if (job.source_type === 'upload') { const match = /^storage:\/\/([^/]+)\/(.+)$/.exec(job.source_url); if (!match) throw new Error('Invalid staged upload URL.'); const { data, error } = await storageProvider.downloadFile(match[1], match[2]); if (error || !data) throw new Error(`Staged upload is unavailable: ${error?.message || 'not found'}`); if (data.size > MAX_IMPORT_BYTES) throw new Error('Source exceeds the 500 MB import limit.'); return { blob: data, contentType: data.type || null } }
   if (job.source_type === 'video') throw new Error('Video imports require the external audio extraction worker and cannot run in the Edge worker.')
   let source = assertPublicHttpUrl(job.source_url).toString()
   for (let redirects = 0; redirects <= 5; redirects++) { const response = await fetch(source, { redirect: 'manual', signal: AbortSignal.timeout(120000) }); if ([301, 302, 303, 307, 308].includes(response.status)) { const location = response.headers.get('location'); if (!location) throw new Error('Source redirect did not include a location.'); source = assertPublicHttpUrl(new URL(location, source).toString()).toString(); continue }; if (!response.ok) throw new Error(`Source download failed (${response.status}).`); if (Number(response.headers.get('content-length') || 0) > MAX_IMPORT_BYTES) throw new Error('Source exceeds the 500 MB import limit.'); const blob = await response.blob(); if (blob.size > MAX_IMPORT_BYTES) throw new Error('Source exceeds the 500 MB import limit.'); return { blob, contentType: response.headers.get('content-type') } }
   throw new Error('Source redirected too many times.')
 }
 async function processJob(admin: any, job: any) {
+  const storageProvider = createSupabaseStorageProvider(admin)
   if (job.source_type === 'podcast_episode_url') {
     // Podcast extraction belongs to the existing long-running Docker worker.
     // A legacy Edge polling invocation must not fail or consume that work.
@@ -28,11 +30,11 @@ async function processJob(admin: any, job: any) {
   }
   try {
     log(job, 'claimed'); await updateJob(admin, job, { status: 'extracting', progress: 20 }); log(job, 'loading-source')
-    const { blob, contentType } = await loadSource(admin, job); await updateJob(admin, job, { status: 'extracting', progress: 55 })
+    const { blob, contentType } = await loadSource(storageProvider, job); await updateJob(admin, job, { status: 'extracting', progress: 55 })
     const metadata = job.metadata || {}; const title = String(metadata.title || titleFromSource(job.source_url)).slice(0, 500); const extension = extensionFor(job.source_url, contentType); if (extension === 'bin') throw new Error('The source is not a supported audio file.')
     const audioPath = `audio/imports/${job.id}-${safeName(title)}.${extension}`; await updateJob(admin, job, { status: 'uploading', progress: 70, metadata: { ...metadata, title } }); log(job, 'uploading', { bytes: blob.size })
-    const { error: uploadError } = await admin.storage.from('soundverse').upload(audioPath, blob, { contentType: contentTypeFor(extension, contentType), upsert: true }); if (uploadError) throw new Error(`Audio upload failed: ${uploadError.message}`)
-    const { data: publicAudio } = admin.storage.from('soundverse').getPublicUrl(audioPath); await updateJob(admin, job, { status: 'uploading', progress: 90 })
+    const { error: uploadError } = await storageProvider.uploadFile('soundverse', audioPath, blob, { contentType: contentTypeFor(extension, contentType), cacheControl: '31536000, immutable', upsert: true }); if (uploadError) throw new Error(`Audio upload failed: ${uploadError.message}`)
+    const { data: publicAudio } = storageProvider.getPublicUrl('soundverse', audioPath); await updateJob(admin, job, { status: 'uploading', progress: 90 })
     const trackPayload = { import_job_id: job.id, title, artist: metadata.artist || 'Unknown Artist', album: metadata.album || null, genre: metadata.genre || null, cover_url: metadata.cover_url || null, audio_url: publicAudio.publicUrl, duration: Number.isFinite(Number(metadata.duration)) ? Math.max(0, Math.round(Number(metadata.duration))) : null, published: true, owner_id: job.created_by }
     const { data: track, error: trackError } = await admin.from('music_tracks').upsert(trackPayload, { onConflict: 'import_job_id' }).select('id').single(); if (trackError || !track) throw new Error(`Track creation failed: ${trackError?.message || 'no track returned'}`)
     const { error: completeError } = await admin.from('import_jobs').update({ status: 'completed', progress: 100, track_id: track.id, metadata: { ...metadata, title }, completed_at: new Date().toISOString(), error_message: null }).eq('id', job.id).neq('status', 'cancelled'); if (completeError) throw completeError

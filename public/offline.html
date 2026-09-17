@@ -1,4 +1,30 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#060608"><title>SoundVerse — Offline</title>
 <style>body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#0b0b13;color:#fff;font:18px system-ui}main{max-width:32rem;padding:2rem}p{line-height:1.6;color:#c6c6d5}button{font:inherit;padding:.8rem 1.5rem;border:0;border-radius:2rem;background:#b833ff;color:white;cursor:pointer}</style></head>
-<body><main><h1>You’re offline</h1><p>Reconnect to load your music and podcasts. Audio downloads are not available for offline listening.</p><button onclick="location.reload()">Try again</button></main></body></html>
+<body><main><h1 id="title">SoundVerse could not be loaded</h1><p id="message">Please try again.</p><button id="retry">Try again</button></main>
+<script>
+let recovering = false;
+function status() {
+  const offline = navigator.onLine === false;
+  document.getElementById('title').textContent = offline ? "You're offline" : 'SoundVerse could not be loaded';
+  document.getElementById('message').textContent = offline ? 'Reconnect to load your music and podcasts.' : 'The connection is available, but SoundVerse could not be reached. Please try again.';
+  return offline;
+}
+async function recover() {
+  if (status() || recovering) return;
+  recovering = true;
+  try {
+    const response = await fetch(location.href, { cache: 'no-store', headers: { 'Accept': 'text/html' } });
+    // No React shell exists here: successful recovery must boot the app document.
+    if (response.ok && new DOMParser().parseFromString(await response.text(), 'text/html').getElementById('root')) location.replace(location.href);
+  } catch { /* Request failure is not proof of offline status. */ }
+  finally { recovering = false; status(); }
+}
+document.getElementById('retry').addEventListener('click', recover);
+window.addEventListener('online', recover);
+window.addEventListener('offline', status);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') recover(); });
+status();
+if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistration().then(registration => registration?.update()).catch(() => {});
+recover();
+</script></body></html>

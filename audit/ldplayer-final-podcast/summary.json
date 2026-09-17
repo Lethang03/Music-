@@ -1,0 +1,482 @@
+[
+  {
+    "step": "01-playing",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 1, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=16, buffered position=0, speed=1.0, updated=1177521, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463846627,
+    "audio": {
+      "event": "timeupdate",
+      "time": 0.969033,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode1.wav?seconds=90",
+      "visibility": "visible",
+      "timestamp": 1789463846904
+    }
+  },
+  {
+    "step": "02-foreground-next-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=16, buffered position=0, speed=1.0, updated=1177521, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463847525,
+    "audio": {
+      "event": "playing",
+      "time": 0.030357,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "visible",
+      "timestamp": 1789463848061
+    }
+  },
+  {
+    "step": "03-foreground-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=31, buffered position=0, speed=1.0, updated=1179712, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463851639,
+    "audio": {
+      "event": "timeupdate",
+      "time": 3.048781,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "visible",
+      "timestamp": 1789463851201
+    }
+  },
+  {
+    "step": "04-home",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=31, buffered position=0, speed=1.0, updated=1179712, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463857095,
+    "audio": {
+      "event": "timeupdate",
+      "time": 9.419143,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463857575
+    }
+  },
+  {
+    "step": "05-background-next-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 3, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=22, buffered position=0, speed=1.0, updated=1189689, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463857486,
+    "audio": {
+      "event": "playing",
+      "time": 0.008915,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode3.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463858022
+    }
+  },
+  {
+    "step": "06-background-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 3, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=22, buffered position=0, speed=1.0, updated=1189689, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463861607,
+    "audio": {
+      "event": "timeupdate",
+      "time": 3.046788,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode3.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463861185
+    }
+  },
+  {
+    "step": "10-previous-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=22, buffered position=0, speed=1.0, updated=1189689, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463862556,
+    "audio": {
+      "event": "playing",
+      "time": 0.005549,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463863092
+    }
+  },
+  {
+    "step": "11-previous-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=19, buffered position=0, speed=1.0, updated=1194760, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463866661,
+    "audio": {
+      "event": "timeupdate",
+      "time": 3.091448,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463866263
+    }
+  },
+  {
+    "step": "12-paused",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=2, position=4707, buffered position=0, speed=0.0, updated=1199473, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463867993,
+    "audio": {
+      "event": "pause",
+      "time": 4.610617,
+      "duration": 90,
+      "paused": true,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463867787
+    }
+  },
+  {
+    "step": "13-still-paused",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=2, position=4707, buffered position=0, speed=0.0, updated=1199473, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463871096,
+    "audio": {
+      "event": "pause",
+      "time": 4.610617,
+      "duration": 90,
+      "paused": true,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463867787
+    }
+  },
+  {
+    "step": "14-resume-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=2, position=4707, buffered position=0, speed=0.0, updated=1199473, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463871424,
+    "audio": {
+      "event": "pause",
+      "time": 4.610617,
+      "duration": 90,
+      "paused": true,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463867787
+    }
+  },
+  {
+    "step": "15-resume-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=4707, buffered position=0, speed=1.0, updated=1203884, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463875535,
+    "audio": {
+      "event": "timeupdate",
+      "time": 7.62089,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463875388
+    }
+  },
+  {
+    "step": "07-power-off",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=4707, buffered position=0, speed=1.0, updated=1203884, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463877871,
+    "audio": {
+      "event": "timeupdate",
+      "time": 9.74987,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463877512
+    }
+  },
+  {
+    "step": "08-locked-next-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=4707, buffered position=0, speed=1.0, updated=1203884, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463878224,
+    "audio": {
+      "event": "timeupdate",
+      "time": 10.803738,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463878575
+    }
+  },
+  {
+    "step": "09-locked-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 2, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=4707, buffered position=0, speed=1.0, updated=1203884, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463882334,
+    "audio": {
+      "event": "timeupdate",
+      "time": 15.061519,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463882825
+    }
+  },
+  {
+    "step": "09b-locked-service-next-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 3, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=4707, buffered position=0, speed=1.0, updated=1203884, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463882727,
+    "audio": {
+      "event": "playing",
+      "time": 0.006409,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode3.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463883275
+    }
+  },
+  {
+    "step": "09c-locked-service-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 3, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=1214933, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463886836,
+    "audio": {
+      "event": "timeupdate",
+      "time": 3.062754,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode3.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463886450
+    }
+  },
+  {
+    "step": "16-before-natural-end-locked",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 3, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=1214933, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463894269,
+    "audio": {
+      "event": "timeupdate",
+      "time": 73.007734,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode3.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463894466
+    }
+  },
+  {
+    "step": "17-auto-next",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 1, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=14, buffered position=0, speed=1.0, updated=1243356, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463919366,
+    "audio": {
+      "event": "timeupdate",
+      "time": 7.316243,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode1.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463919106
+    }
+  },
+  {
+    "step": "18-auto-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Episode 1, Host, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=14, buffered position=0, speed=1.0, updated=1243356, actions=382, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463923473,
+    "audio": {
+      "event": "timeupdate",
+      "time": 11.564091,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/episode1.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463923356
+    }
+  }
+]

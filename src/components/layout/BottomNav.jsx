@@ -24,41 +24,6 @@ export default function BottomNav() {
           </Link>
         )
       })}
-
-      <style>{`
-        .v2-bottom-nav {
-          display: none;
-          position: fixed;
-          bottom: 0; left: 0; right: 0;
-          height: var(--mobile-nav-height);
-          background: rgba(13, 13, 18, 0.9);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-top: 1px solid var(--border-strong);
-          z-index: 60; /* Above global player (50) on mobile */
-          padding-bottom: env(safe-area-inset-bottom);
-        }
-        .v2-bottom-nav-item {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-          color: var(--text-secondary);
-          font-size: 0.65rem;
-          font-weight: 600;
-          transition: color var(--transition-fast);
-        }
-        .v2-bottom-nav-item.active {
-          color: var(--text-primary);
-        }
-        
-        @media (max-width: 768px) {
-          .v2-bottom-nav { display: flex; }
-        }
-      `}</style>
     </nav>
   )
 }
-

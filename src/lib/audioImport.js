@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { storageProvider } from '../services/storage'
 
 const MAX_UPLOAD_BYTES = 500 * 1024 * 1024
 const AUDIO_TYPES = ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'audio/aac', 'audio/ogg', 'audio/opus', 'audio/flac', 'video/webm']
@@ -10,7 +11,10 @@ export async function queueUpload(file, userId, onProgress) {
   const extension = file.name.split('.').pop()?.toLowerCase() || 'bin';
   const path = `imports/${userId}/${crypto.randomUUID()}.${extension}`;
   onProgress?.(5);
-  const { error: uploadError } = await supabase.storage.from('soundverse').upload(path, file, { contentType: file.type || 'application/octet-stream' });
+  const { error: uploadError } = await storageProvider.uploadFile('soundverse', path, file, {
+    contentType: file.type || 'application/octet-stream',
+    cacheControl: '31536000, immutable'
+  });
   if (uploadError) throw new Error(`Staging upload failed: ${uploadError.message}`);
   onProgress?.(45);
   

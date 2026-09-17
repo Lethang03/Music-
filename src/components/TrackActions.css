@@ -1,0 +1,34 @@
+/* One geometry for card, episode, queue and player action triggers. */
+.v2-track-actions summary.sv-more-button {
+  box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; min-width: 40px; min-height: 40px; flex-shrink: 0;
+  padding: 0; margin: 0; line-height: 1; border-radius: 50%; list-style: none;
+  position: static; transform: none; cursor: pointer; color: #bbcae3;
+}
+.v2-track-actions summary.sv-more-button::-webkit-details-marker { display: none; }
+.sv-more-button svg { display: block; width: 20px; height: 20px; flex: none; }
+.sv-more-button:focus-visible { outline: 2px solid #72d8ee; outline-offset: 3px; }
+.v2-track-actions .v2-action-menu[popover] {
+  position: fixed; inset: auto; margin: 0; box-sizing: border-box; width: 232px;
+  max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow-y: auto;
+  background: #111a2d; color: #e3ebfa; border: 1px solid #46608a; border-radius: 14px;
+  padding: 10px; box-shadow: 0 14px 40px #0008;
+}
+.v2-track-actions .v2-action-menu[popover]:not(:popover-open) { display: none; }
+.v2-track-actions .v2-action-menu[popover]:popover-open { display: flex; flex-direction: column; gap: 6px; }
+.v2-action-menu button { min-height: 44px; flex-shrink: 0; }
+.v2-action-menu select { width: 100%; min-height: 44px; margin-top: 6px; }
+/* Playlist rows reserve actual space for their shared menu and existing actions. */
+@media (max-width: 1199px) {
+  .playlist-page .playlist-track, .playlist-page .playlist-track-head { grid-template-columns: 28px minmax(0, 1fr) 48px auto; }
+  .playlist-page .playlist-album, .playlist-page .playlist-track-head > span:nth-child(3) { display: none; }
+}
+@media (max-width: 760px) {
+  .playlist-page .playlist-track, .playlist-page .playlist-track-head { grid-template-columns: 28px minmax(0, 1fr) 44px; }
+  .playlist-page .playlist-row-actions { grid-column: 2 / -1; justify-content: flex-end; }
+  .playlist-page .playlist-row-actions button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+  .playlist-page .playlist-track-head > span:last-child { display: none; }
+}
+@media (max-width: 767px), (pointer: coarse) {
+  .v2-track-actions summary.sv-more-button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+}

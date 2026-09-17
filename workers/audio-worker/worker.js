@@ -3,13 +3,24 @@ import { createClient } from '@supabase/supabase-js'
 import ffmpegStatic from 'ffmpeg-static'
 import { createReadStream, createWriteStream, promises as fs } from 'node:fs'
 import { spawn } from 'node:child_process'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
 import { createRequire } from 'node:module'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { validatePodcastSource } from './podcastSource.js'
+import { createStorageProvider } from '../../src/services/storage/providerFactory.js'
+
+async function computeFileHash(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha256')
+    const stream = createReadStream(filePath)
+    stream.on('data', chunk => hash.update(chunk))
+    stream.on('end', () => resolve(hash.digest('hex')))
+    stream.on('error', reject)
+  })
+}
 
 const url = process.env.SUPABASE_URL
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -24,6 +35,7 @@ if (!key) {
   process.exit(1)
 }
 const supabase = createClient(url, key, { auth: { persistSession: false } })
+const storageProvider = createStorageProvider(supabase, process.env.STORAGE_PROVIDER || process.env.VITE_STORAGE_PROVIDER)
 const pollMs = Number(process.env.IMPORT_POLL_MS || 3000)
 const maxBytes = Number(process.env.MAX_IMPORT_BYTES || 524288000)
 const require = createRequire(import.meta.url)
@@ -118,7 +130,7 @@ async function processJob(job) {
     if (job.source_type === 'upload') {
       const match = /^storage:\/\/([^/]+)\/(.+)$/.exec(job.source_url)
       if (!match) throw new Error('Invalid staged upload URL.')
-      const { data, error } = await supabase.storage.from(match[1]).download(match[2])
+      const { data, error } = await storageProvider.downloadFile(match[1], match[2])
       if (error || !data) throw new Error(`Staged upload is unavailable: ${error?.message || 'not found'}`)
       input = join(folder, `source${extname(match[2]) || '.bin'}`)
       await fs.writeFile(input, Buffer.from(await data.arrayBuffer()))
@@ -170,46 +182,92 @@ async function processJob(job) {
     log(job, 'Converting audio')
     await stage('Converting', 55)
     const output = join(folder, 'processed.mp3')
-    await run(ffmpeg, ['-y', '-i', input, '-vn', '-codec:a', 'libmp3lame', '-b:a', '192k', '-ar', '44100', '-ac', '2', output], folder)
+    const audioBitrate = podcastJob ? '112k' : '160k'
+    await run(ffmpeg, ['-y', '-i', input, '-vn', '-codec:a', 'libmp3lame', '-b:a', audioBitrate, '-ar', '44100', '-ac', '2', output], folder)
     const duration = await durationSeconds(output, job)
     const title = (podcastJob ? job.metadata?.title?.trim() : null) || info.title || (podcastJob ? 'Imported Episode' : basename(job.source_url).replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ') || 'Imported Track')
     const metadata = podcastJob ? { ...job.metadata, title, source_title: info.title, source_author: info.uploader, thumbnail: info.thumbnail, duration } : { ...job.metadata, ...info, title, artist: info.artist || info.uploader || job.metadata?.artist || 'Unknown Artist', duration }
-    if ((await fs.stat(output)).size > maxBytes) throw new Error('Converted audio exceeds the import limit.')
+    const stat = await fs.stat(output)
+    if (stat.size > maxBytes) throw new Error('Converted audio exceeds the import limit.')
+    const fileSize = stat.size
 
-    await update(job, { status: 'uploading', progress: 70, metadata: { ...metadata, stage: 'Uploading' } })
-    audioPath = podcastJob ? `audio/podcasts/${job.podcast_id}/${job.source_platform}-${job.source_id}.mp3` : `audio/imports/${job.id}-${safeName(title)}.mp3`
-    log(job, 'Uploading file', { path: audioPath })
-    const { error: uploadError } = await supabase.storage.from('soundverse').upload(audioPath, createReadStream(output), { contentType: 'audio/mpeg', upsert: false })
-    if (uploadError && !/already exists/i.test(uploadError.message)) throw new Error(`Audio upload failed: ${uploadError.message}`)
-    const audioUrl = supabase.storage.from('soundverse').getPublicUrl(audioPath).data.publicUrl
+    // Phase 3 Deduplication: Generate SHA-256 hash of output audio
+    const audioHash = await computeFileHash(output)
+    log(job, 'Computed audio hash', { audio_hash: audioHash, file_size: fileSize })
+
+    // Check database: if audio_hash exists, reuse audio_url and skip upload
+    let audioUrl = null
+    let isDeduplicated = false
+
+    const { data: matchedTrack, error: trackCheckError } = await supabase
+      .from('music_tracks')
+      .select('audio_url')
+      .eq('audio_hash', audioHash)
+      .not('audio_url', 'is', null)
+      .limit(1)
+      .maybeSingle()
+
+    if (!trackCheckError && matchedTrack?.audio_url) {
+      audioUrl = matchedTrack.audio_url
+      isDeduplicated = true
+      log(job, 'Deduplication hit: found existing track with identical audio hash', { audio_url: audioUrl, audio_hash: audioHash })
+    } else {
+      const { data: matchedEpisode, error: epCheckError } = await supabase
+        .from('episodes')
+        .select('audio_url')
+        .eq('audio_hash', audioHash)
+        .not('audio_url', 'is', null)
+        .limit(1)
+        .maybeSingle()
+
+      if (!epCheckError && matchedEpisode?.audio_url) {
+        audioUrl = matchedEpisode.audio_url
+        isDeduplicated = true
+        log(job, 'Deduplication hit: found existing episode with identical audio hash', { audio_url: audioUrl, audio_hash: audioHash })
+      }
+    }
+
+    if (!isDeduplicated) {
+      await update(job, { status: 'uploading', progress: 70, metadata: { ...metadata, stage: 'Uploading' } })
+      audioPath = podcastJob ? `audio/podcasts/${job.podcast_id}/${job.source_platform}-${job.source_id}.mp3` : `audio/imports/${job.id}-${safeName(title)}.mp3`
+      log(job, 'Uploading file', { path: audioPath })
+      const { error: uploadError } = await storageProvider.uploadFile('soundverse', audioPath, createReadStream(output), { contentType: 'audio/mpeg', cacheControl: '31536000, immutable', upsert: false })
+      if (uploadError && !/already exists/i.test(uploadError.message)) throw new Error(`Audio upload failed: ${uploadError.message}`)
+      audioUrl = storageProvider.getPublicUrl('soundverse', audioPath).data.publicUrl
+    } else {
+      log(job, 'Deduplication: reusing existing audio URL, skipping storage upload', { audio_url: audioUrl, audio_hash: audioHash })
+    }
+
     if (podcastJob) {
-      await update(job, { status: 'uploading', progress: 90, metadata: { ...metadata, stage: 'Creating Episode' } })
-      const payload = { podcast_id: job.podcast_id, title, description: job.metadata?.description?.trim() || info.description || '', cover_url: job.metadata?.cover_url || info.thumbnail || podcast.cover_url || null, audio_url: audioUrl, duration: duration || Math.round(Number(info.duration) || 0), episode_number: job.metadata?.episode_number || null, season_number: job.metadata?.season_number || null, published: true, published_at: new Date().toISOString(), source_platform: job.source_platform, source_id: job.source_id, source_url: info.webpage_url || job.source_url, source_author: info.uploader || info.creator || null, import_job_id: job.id }
+      await update(job, { status: 'uploading', progress: 90, metadata: { ...metadata, stage: 'Creating Episode', audio_hash: audioHash, file_size: fileSize, deduplicated: isDeduplicated } })
+      const payload = { podcast_id: job.podcast_id, title, description: job.metadata?.description?.trim() || info.description || '', cover_url: job.metadata?.cover_url || info.thumbnail || podcast.cover_url || null, audio_url: audioUrl, duration: duration || Math.round(Number(info.duration) || 0), episode_number: job.metadata?.episode_number || null, season_number: job.metadata?.season_number || null, published: true, published_at: new Date().toISOString(), source_platform: job.source_platform, source_id: job.source_id, source_url: info.webpage_url || job.source_url, source_author: info.uploader || info.creator || null, import_job_id: job.id, audio_hash: audioHash, file_size: fileSize }
       let { data: episode, error: episodeError } = await supabase.from('episodes').insert(payload).select('id').single()
       if (episodeError?.code === '23505') {
         const result = await supabase.from('episodes').select('id').eq('source_platform', job.source_platform).eq('source_id', job.source_id).single()
         episode = result.data; episodeError = result.error
       }
       if (episodeError || !episode) throw new Error('Unable to create the podcast episode.')
-      await update(job, { status: 'completed', progress: 100, episode_id: episode.id, metadata: { title, duration, source_author: payload.source_author }, completed_at: new Date().toISOString(), error_message: null })
-      log(job, 'Completed', { episode_id: episode.id })
+      await update(job, { status: 'completed', progress: 100, episode_id: episode.id, metadata: { title, duration, source_author: payload.source_author, audio_hash: audioHash, file_size: fileSize, deduplicated: isDeduplicated }, completed_at: new Date().toISOString(), error_message: null })
+      log(job, 'Completed', { episode_id: episode.id, deduplicated: isDeduplicated })
       return
     }
 
-    await update(job, { status: 'uploading', progress: 90, metadata })
+    await update(job, { status: 'uploading', progress: 90, metadata: { ...metadata, audio_hash: audioHash, file_size: fileSize, deduplicated: isDeduplicated } })
     // The unique import_job_id index makes a crash/retry unable to create duplicate tracks.
     const { data: existing, error: existingError } = await supabase.from('music_tracks').select('id').eq('import_job_id', job.id).maybeSingle()
     if (existingError) throw new Error(`Track lookup failed: ${existingError.message}`)
     let track = existing
     if (!track) {
-      const { data, error } = await supabase.from('music_tracks').insert({ title, artist: metadata.artist, album: metadata.album || null, genre: metadata.genre || null, cover_url: job.metadata?.cover_url || null, audio_url: audioUrl, duration, published: true, owner_id: job.created_by, import_job_id: job.id }).select('id').single()
+      const { data, error } = await supabase.from('music_tracks').insert({ title, artist: metadata.artist, album: metadata.album || null, genre: metadata.genre || null, cover_url: job.metadata?.cover_url || null, audio_url: audioUrl, duration, published: true, owner_id: job.created_by, import_job_id: job.id, audio_hash: audioHash, file_size: fileSize, audio_mime_type: 'audio/mpeg' }).select('id').single()
       if (error) throw new Error(`Track creation failed: ${error.message}`)
       track = data
+    } else {
+      await supabase.from('music_tracks').update({ audio_hash: audioHash, file_size: fileSize, audio_mime_type: 'audio/mpeg' }).eq('id', track.id)
     }
     if (!track?.id) throw new Error('Track creation failed: no track was returned.')
 
-    await update(job, { status: 'completed', progress: 100, track_id: track.id, metadata, completed_at: new Date().toISOString(), error_message: null })
-    log(job, 'Completed', { track_id: track.id })
+    await update(job, { status: 'completed', progress: 100, track_id: track.id, metadata: { ...metadata, audio_hash: audioHash, file_size: fileSize, deduplicated: isDeduplicated }, completed_at: new Date().toISOString(), error_message: null })
+    log(job, 'Completed', { track_id: track.id, deduplicated: isDeduplicated })
   } catch (error) {
     log(job, 'Failed', { error: String(error.message || error) })
     if (error.message !== 'Import cancelled.') {

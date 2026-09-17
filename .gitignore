@@ -13,3 +13,5 @@ test-results/
 .netlify
 .vscode/
 audit/tmp/
+cache/
+discord-bot/cache/

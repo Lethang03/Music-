@@ -1,0 +1,434 @@
+[
+  {
+    "step": "01-playing",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=27, buffered position=0, speed=1.0, updated=715000, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463384329,
+    "audio": {
+      "event": "timeupdate",
+      "time": 0.936875,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/1.wav?seconds=90",
+      "visibility": "visible",
+      "timestamp": 1789463384372
+    }
+  },
+  {
+    "step": "02-foreground-next-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=27, buffered position=0, speed=1.0, updated=715000, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463385289,
+    "audio": {
+      "event": "playing",
+      "time": 0,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "visible",
+      "timestamp": 1789463385802
+    }
+  },
+  {
+    "step": "03-foreground-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=18, buffered position=0, speed=1.0, updated=717458, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463389395,
+    "audio": {
+      "event": "timeupdate",
+      "time": 3.059195,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "visible",
+      "timestamp": 1789463388966
+    }
+  },
+  {
+    "step": "04-home",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=18, buffered position=0, speed=1.0, updated=717458, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463394784,
+    "audio": {
+      "event": "timeupdate",
+      "time": 8.380372,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463394403
+    }
+  },
+  {
+    "step": "05-background-next-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=18, buffered position=0, speed=1.0, updated=717458, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463395274,
+    "audio": {
+      "event": "playing",
+      "time": 0.014537,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/3.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463395787
+    }
+  },
+  {
+    "step": "06-background-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 3, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=25, buffered position=0, speed=1.0, updated=727449, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463399391,
+    "audio": {
+      "event": "timeupdate",
+      "time": 3.094782,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/3.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463398950
+    }
+  },
+  {
+    "step": "10-previous-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 3, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=25, buffered position=0, speed=1.0, updated=727449, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463400433,
+    "audio": {
+      "event": "playing",
+      "time": 0,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463400949
+    }
+  },
+  {
+    "step": "11-previous-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=24, buffered position=0, speed=1.0, updated=732616, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463404539,
+    "audio": {
+      "event": "timeupdate",
+      "time": 3.063504,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463404107
+    }
+  },
+  {
+    "step": "12-paused",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=2, position=4771, buffered position=0, speed=0.0, updated=737392, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463405926,
+    "audio": {
+      "event": "pause",
+      "time": 4.657497,
+      "duration": 90,
+      "paused": true,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463405699
+    }
+  },
+  {
+    "step": "13-still-paused",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=2, position=4771, buffered position=0, speed=0.0, updated=737392, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463409032,
+    "audio": {
+      "event": "pause",
+      "time": 4.657497,
+      "duration": 90,
+      "paused": true,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463405699
+    }
+  },
+  {
+    "step": "14-resume-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=2, position=4771, buffered position=0, speed=0.0, updated=737392, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463409397,
+    "audio": {
+      "event": "pause",
+      "time": 4.657497,
+      "duration": 90,
+      "paused": true,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463405699
+    }
+  },
+  {
+    "step": "15-resume-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=4771, buffered position=0, speed=1.0, updated=741832, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463413503,
+    "audio": {
+      "event": "timeupdate",
+      "time": 7.649525,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463413341
+    }
+  },
+  {
+    "step": "07-power-off",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=4771, buffered position=0, speed=1.0, updated=741832, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463415869,
+    "audio": {
+      "event": "timeupdate",
+      "time": 9.773939,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463415466
+    }
+  },
+  {
+    "step": "08-locked-next-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=4771, buffered position=0, speed=1.0, updated=741832, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463416348,
+    "audio": {
+      "event": "timeupdate",
+      "time": 10.83551,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463416528
+    }
+  },
+  {
+    "step": "09-locked-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=4771, buffered position=0, speed=1.0, updated=741832, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463420465,
+    "audio": {
+      "event": "timeupdate",
+      "time": 15.093956,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "hidden",
+      "timestamp": 1789463420778
+    }
+  },
+  {
+    "step": "16-before-natural-end-locked",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=4771, buffered position=0, speed=1.0, updated=741832, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=ON"
+    ],
+    "observedAt": 1789463427954,
+    "audio": {
+      "event": "timeupdate",
+      "time": 85.831928,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/2.wav?seconds=90",
+      "visibility": "visible",
+      "timestamp": 1789463428466
+    }
+  },
+  {
+    "step": "17-auto-next",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 3, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=0, buffered position=0, speed=1.0, updated=764527, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463439068,
+    "audio": {
+      "event": "timeupdate",
+      "time": 6.203783,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/3.wav?seconds=90",
+      "visibility": "visible",
+      "timestamp": 1789463439184
+    }
+  },
+  {
+    "step": "18-auto-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 3, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=0, buffered position=0, speed=1.0, updated=764527, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ],
+    "observedAt": 1789463443177,
+    "audio": {
+      "event": "timeupdate",
+      "time": 10.449784,
+      "duration": 90,
+      "paused": false,
+      "src": "http://127.0.0.1:3100/test-audio/3.wav?seconds=90",
+      "visibility": "visible",
+      "timestamp": 1789463443434
+    }
+  }
+]

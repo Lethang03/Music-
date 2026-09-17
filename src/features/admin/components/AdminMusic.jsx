@@ -1,10 +1,10 @@
+import { mediaProvider } from '../../../services/media'
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { uploadMedia } from '../../../lib/upload'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useLibrary } from '../../../contexts/LibraryContext'
 import TrackForm from './TrackForm'
-import BatchLyricsSyncModal from './BatchLyricsSyncModal'
 
 export default function AdminMusic() {
   const { session } = useAuth()
@@ -16,7 +16,6 @@ export default function AdminMusic() {
   const [busy, setBusy] = useState(false)
   const [search, setSearch] = useState('')
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [showBatchModal, setShowBatchModal] = useState(false)
 
   const loadTracks = async () => {
     setLoading(true)
@@ -61,10 +60,6 @@ export default function AdminMusic() {
         lyrics: payloadWithFiles.lyrics || null,
         lyrics_type: payloadWithFiles.lyrics_type || 'plain',
         synced_lyrics: payloadWithFiles.synced_lyrics,
-        source_url: payloadWithFiles.source_url || null,
-        lyrics_sync_source_url: payloadWithFiles.lyrics_sync_source_url || null,
-        lyrics_sync_confidence: payloadWithFiles.lyrics_sync_confidence || null,
-        lyrics_synced_at: payloadWithFiles.lyrics_synced_at || null,
         audio_url: finalAudio,
         cover_url: finalCover || null,
         published: payloadWithFiles.published
@@ -159,16 +154,6 @@ export default function AdminMusic() {
           value={search} 
           onChange={e => setSearch(e.target.value)} 
         />
-        <button 
-          type="button"
-          aria-label="Auto sync existing lyrics" 
-          className="v2-btn-outline v2-admin-btn-batch-sync" 
-          onClick={() => setShowBatchModal(true)} 
-          disabled={busy}
-          style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          ⚡ Auto Sync Existing Lyrics
-        </button>
         <button aria-label="Add content" className="v2-admin-btn-primary" onClick={() => setForm({ title: '', published: false })} disabled={busy}>
           + Add Track
         </button>
@@ -194,7 +179,7 @@ export default function AdminMusic() {
                 <tr className="v2-media-row" key={t.id}>
                   <td>
                     <div className="v2-admin-cell-flex">
-                      <img src={t.cover_url || ''} alt="" className="v2-admin-thumb-sm" />
+                      <img src={mediaProvider.getCoverUrl(t.cover_url || '')} alt="" className="v2-admin-thumb-sm" loading="lazy" decoding="async" />
                       <div>
                         <strong>{t.title}</strong>
                         <small>{t.artist}</small>
@@ -226,21 +211,6 @@ export default function AdminMusic() {
             </tbody>
           </table>
         </div>
-      )}
-
-      {showBatchModal && (
-        <BatchLyricsSyncModal 
-          tracks={tracks} 
-          onClose={() => setShowBatchModal(false)} 
-          onTrackSaved={() => {
-            loadTracks()
-            void loadPublicLibrary().catch(err => setError(err.message))
-          }}
-          onEditTrack={(t) => {
-            setShowBatchModal(false)
-            setForm({ ...t })
-          }}
-        />
       )}
     </div>
   )

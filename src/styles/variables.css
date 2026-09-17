@@ -7,7 +7,7 @@
   --sv-border-strong: rgba(255,255,255,0.14);
   --sv-text-primary: #F7FAFF;
   --sv-text-secondary: #AAB4CC;
-  --sv-text-muted: #6F7A95;
+  --sv-text-muted: #8D9AB7;
   --sv-blue: #3B82F6;
   --sv-cyan: #22D3EE;
   --sv-violet: #7C3AED;
@@ -83,6 +83,8 @@
   --topbar-height: 80px;
   --player-height: 88px;
   --player-height-mobile: 68px;
-  --mobile-nav-height: 72px;
+  --mobile-nav-height: 64px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-bottom-space: calc(var(--mobile-nav-height) + var(--player-height-mobile) + var(--safe-bottom) + 32px);
   --sidebar-width: 280px;
 }

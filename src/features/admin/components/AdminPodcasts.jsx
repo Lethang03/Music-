@@ -1,3 +1,4 @@
+import { mediaProvider } from '../../../services/media'
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { uploadMedia } from '../../../lib/upload'
@@ -141,7 +142,7 @@ export default function AdminPodcasts() {
                 <tr key={p.id}>
                   <td>
                     <div className="v2-admin-cell-flex">
-                      <img src={p.cover_url || ''} alt="" className="v2-admin-thumb-sm" />
+                      <img src={mediaProvider.getCoverUrl(p.cover_url || '')} alt="" className="v2-admin-thumb-sm" loading="lazy" decoding="async" />
                       <div>
                         <strong>{p.title}</strong>
                         <small>{p.author}</small>

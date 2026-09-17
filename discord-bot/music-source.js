@@ -1,6 +1,9 @@
 import './config.js'
 import { supabase, supabaseReady } from '../src/lib/supabase.js'
 import { mediaUrl, validUrl } from '../src/lib/storage.js'
+import { createSupabaseMediaProvider } from '../src/services/media/supabaseMediaProvider.js'
+
+const mediaProvider = createSupabaseMediaProvider(process.env.VITE_SUPABASE_URL)
 
 export class AudioTestError extends Error {}
 
@@ -10,7 +13,7 @@ export const safeTitle = (title) => String(title || 'Untitled track')
   .replace(/https?:\/\/\S+/gi, '[URL omitted]').replace(/[\x00-\x1f\x7f]/g, ' ').slice(0, 180)
 
 export function audioSource(track) {
-  const value = mediaUrl(track)?.trim()
+  const value = mediaProvider.getAudioUrl(mediaUrl(track)?.trim())
   if (!value || !validUrl(value)) throw new AudioTestError('Invalid audio URL: expected an absolute HTTP(S) audio source.')
   const url = new URL(value)
   if (url.username || url.password) throw new AudioTestError('Audio URLs with embedded credentials are unsupported.')

@@ -13,7 +13,9 @@ export function logPlaybackEvent(event, audio, item, detail = '') {
   const previous = readStored(PLAYBACK_DIAGNOSTICS_KEY, [])
   const entries = Array.isArray(previous) ? previous : []
   const entry = {
-    timestamp: new Date().toISOString(), event, detail: String(detail || '').slice(0, 240),
+    timestamp: new Date().toISOString(), event,
+    category: event === 'MEDIA_SESSION' ? '[MEDIA_SESSION]' : /PLAY_REQUEST|PLAY_SUCCESS|PLAY_REJECTED/.test(event) ? '[AUDIO_PLAY]' : '[BACKGROUND_PLAYBACK]',
+    detail: String(detail || '').slice(0, 240),
     visibilityState: document.visibilityState, trackId: item?.id || '', trackTitle: item?.title || '',
     src: safeSource(audio?.src), paused: Boolean(audio?.paused), currentTime: Number(audio?.currentTime || 0),
     readyState: Number(audio?.readyState || 0), networkState: Number(audio?.networkState || 0),

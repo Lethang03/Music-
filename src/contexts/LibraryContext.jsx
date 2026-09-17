@@ -4,8 +4,11 @@ import { useAuth } from './AuthContext'
 import { readStored, writeStored, mediaKey } from '../lib/storage'
 import { fetchRows } from '../lib/fetchRows'
 import { activityPayload } from '../lib/activityPayload'
+import { useConnectivity } from './ConnectivityContext'
+import { toFriendlyError } from '../lib/friendlyError'
 const LibraryContext = createContext()
 export function LibraryProvider({ children }) {
+  const { recoveryAttempt } = useConnectivity()
   const { session } = useAuth()
   const userId = session?.user?.id
   const [catalog, setCatalog] = useState({ podcasts: [], episodes: [], tracks: [], playlists: [] })
@@ -61,14 +64,14 @@ export function LibraryProvider({ children }) {
         return query.order(table === 'episodes' ? 'published_at' : 'created_at', { ascending: false }).order('id')
       }, controller.signal)))
       if (request !== requestId.current || currentUser.current !== userId || cleared.current) return
-      const failures = results.flatMap((result, index) => result.error ? [`${tables[index]}: ${result.error.message}`] : [])
+      const failures = results.flatMap((result, index) => result.error ? [`${tables[index]}: ${toFriendlyError(result.error)}`] : [])
       setError(failures.join(' · '))
       const [p, e, t, pl] = results.map(result => result.data || [])
       setCatalog({ podcasts: p.map(x => ({ ...x, image: x.cover_url || x.image })), episodes: e.map(x => ({ ...x, type: 'episode' })), tracks: t, playlists: pl })
-    } catch (err) { if (request === requestId.current) setError(err.message) }
+    } catch (err) { if (request === requestId.current) setError(toFriendlyError(err)) }
     finally { if (request === requestId.current) setLoading(false) }
   }, [userId])
-  useEffect(() => { loadPublicLibrary(); return () => { requestId.current++; catalogRequest.current?.abort() } }, [loadPublicLibrary])
+  useEffect(() => { loadPublicLibrary(); return () => { requestId.current++; catalogRequest.current?.abort() } }, [loadPublicLibrary, recoveryAttempt])
   useEffect(() => {
     const saved = userId ? readStored(storageKey, { rows: {}, dirty: [] }) : { rows: {}, dirty: [] }
     activityRef.current = saved.rows && typeof saved.rows === 'object' ? saved.rows : {}

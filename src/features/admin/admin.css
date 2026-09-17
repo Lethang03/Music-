@@ -519,3 +519,53 @@
 }
 /* Test hooks reuse the shared media-row selector without changing table layout. */
 tr.v2-media-row { display: table-row; padding: 0; border: 0; }
+
+/* The app shell owns vertical scrolling; admin does not create a second viewport. */
+.admin-page { padding:0; }
+.v2-admin-layout { height:auto; min-height:600px; overflow:visible; border-radius:var(--radius-xl); }
+.v2-admin-main { min-width:0; overflow:visible; }
+.v2-admin-sidebar { width:210px; flex-shrink:0; border-radius:24px 0 0 24px; }
+.v2-admin-header { min-height:88px; height:auto; flex-shrink:0; padding:20px 24px; gap:16px; }
+.v2-admin-content-scroll { overflow:visible; padding:24px; min-width:0; }
+.v2-admin-header-title,.v2-admin-user-info { min-width:0; }
+.v2-admin-header h1 { font-size:1.4rem; letter-spacing:-.03em; }
+.v2-admin-user-info strong { overflow-wrap:anywhere; }
+.v2-admin-search { min-width:0; }
+.v2-admin-layout input,.v2-admin-layout select { min-height:44px; }
+.v2-admin-layout label { line-height:1.5; }
+.v2-admin-table-wrapper { overflow:auto; max-width:100%; scrollbar-width:thin; scrollbar-color:#8596b655 transparent; }
+.v2-admin-cell-flex>div { min-width:0; }
+.v2-admin-cell-flex strong,.v2-admin-cell-flex small { display:block; line-height:1.5; }
+.v2-admin-cell-flex small { margin-top:4px; color:var(--sv-text-secondary); font-size:.75rem; }
+.v2-admin-thumb-sm { flex-shrink:0; }
+.v2-admin-layout .v2-btn-publish { background:var(--sv-accent-gradient); color:var(--sv-text-primary); }
+.v2-admin-layout input:focus,.v2-admin-layout textarea:focus,.v2-admin-layout select:focus { border-color:var(--border-focus); box-shadow:0 0 0 3px #22d3ee0d; }
+.v2-admin-layout .v2-publish-card.active { border-color:var(--sv-blue); background:#3b82f60c; }
+.v2-admin-btn-text { min-height:44px; }
+.v2-admin-actions { gap:8px; }
+@media(max-width:1100px) { .v2-admin-sidebar { width:180px; }.v2-admin-sidebar-header { padding:20px 16px; }.v2-admin-nav { padding:12px; }.v2-admin-nav-item { padding:12px; font-size:.85rem; } }
+@media(max-width:768px) {
+  .v2-admin-layout { flex-direction:column; min-height:0; border-radius:20px; }
+  .v2-admin-mobile-nav { order:-1; display:flex; gap:8px; padding:12px; border:0; border-bottom:1px solid var(--sv-border); background:var(--sv-bg-secondary); border-radius:20px 20px 0 0; scrollbar-width:thin; }
+  .v2-admin-mobile-item { min-height:66px; min-width:84px; justify-content:center; padding:10px 12px; border:1px solid transparent; border-radius:12px; color:var(--sv-text-secondary); gap:7px; }
+  .v2-admin-mobile-item small { display:block; font-size:.72rem; line-height:1.4; }
+  .v2-admin-mobile-item.active { color:#aff1fc; background:#22d3ee0b; border-color:#22d3ee26; }
+  .v2-admin-header { padding:20px 16px; min-height:88px; flex-wrap:wrap; gap:12px; }
+  .v2-admin-header-user { gap:8px; }.v2-admin-avatar { width:32px; height:32px; flex-shrink:0; }
+  .v2-admin-user-info strong { max-width:130px; font-size:.75rem; }.v2-admin-user-info small { font-size:.65rem; }
+  .v2-admin-content-scroll { padding:20px 14px; }
+  .v2-admin-section-page { gap:20px; }
+  .v2-admin-toolbar { gap:12px; }
+  .v2-admin-toolbar>button { width:100%; min-height:44px; }
+  .v2-admin-layout input,.v2-admin-layout select,.admin-modal input,.admin-modal select,.admin-modal textarea { font-size:16px; }
+  .v2-admin-stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .v2-admin-stat-card { padding:16px; min-width:0; }.v2-admin-stat-card span { font-size:.7rem; }
+  /* Preserve all table headings/data inside a deliberate horizontal scroll region. */
+  .v2-admin-table { min-width:620px; }
+  .v2-admin-table th:not(:first-child),.v2-admin-table td:not(:first-child):not(:last-child) { display:table-cell; }
+  .v2-admin-table th,.v2-admin-table td { padding:14px 12px; }
+  .v2-admin-actions { flex-direction:row; }
+  .admin-modal { padding:20px!important; max-height:calc(100dvh - 32px - env(safe-area-inset-top) - var(--safe-bottom)); }
+  .v2-form-grid { gap:18px; }
+  .v2-track-form-footer { position:static; padding:16px; }
+}

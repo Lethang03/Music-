@@ -1,0 +1,254 @@
+[
+  {
+    "step": "01-playing",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=27, buffered position=0, speed=1.0, updated=500938, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ]
+  },
+  {
+    "step": "02-foreground-next-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=502909, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ]
+  },
+  {
+    "step": "03-foreground-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=502909, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ]
+  },
+  {
+    "step": "04-home",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=502909, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ]
+  },
+  {
+    "step": "05-background-next-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=502909, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ]
+  },
+  {
+    "step": "06-background-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 3, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=19, buffered position=0, speed=1.0, updated=512889, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Awake",
+      "Display Power: state=ON"
+    ]
+  },
+  {
+    "step": "07-power-off",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 3, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=19, buffered position=0, speed=1.0, updated=512889, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=ON"
+    ]
+  },
+  {
+    "step": "08-locked-next-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=517700, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=ON"
+    ]
+  },
+  {
+    "step": "09-locked-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=517700, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ]
+  },
+  {
+    "step": "10-previous-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=517700, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ]
+  },
+  {
+    "step": "11-previous-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=517700, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ]
+  },
+  {
+    "step": "12-paused",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=517700, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ]
+  },
+  {
+    "step": "13-still-paused",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=517700, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ]
+  },
+  {
+    "step": "14-resume-immediate",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=517700, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ]
+  },
+  {
+    "step": "15-resume-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=517700, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ]
+  },
+  {
+    "step": "16-before-natural-end-locked",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 1, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=7, buffered position=0, speed=1.0, updated=517700, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=ON"
+    ]
+  },
+  {
+    "step": "17-auto-next",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=0, buffered position=0, speed=1.0, updated=545954, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ]
+  },
+  {
+    "step": "18-auto-next-later",
+    "metadata": [
+      "metadata:size=0, description=null",
+      "metadata:size=4, description=Track 2, Fixture artist, null"
+    ],
+    "state": [
+      "state=PlaybackState {state=3, position=0, buffered position=0, speed=1.0, updated=545954, actions=310, custom actions=[], active item id=-1, error=null}"
+    ],
+    "screen": [
+      "mWakefulness=Asleep",
+      "Display Power: state=OFF"
+    ]
+  }
+]

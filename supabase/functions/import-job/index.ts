@@ -23,6 +23,59 @@ function validateExternalUrl(value: string) {
   if (host === 'localhost' || host.endsWith('.local') || /^127\.|^10\.|^192\.168\.|^169\.254\.|^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) throw new Error('Private-network URLs are blocked.')
 }
 
+export function normalizeSourceUrl(rawUrl: string, type: string): string {
+  const trimmed = String(rawUrl || '').trim()
+  if (type === 'upload') return trimmed
+  let parsed: URL
+  try {
+    parsed = new URL(trimmed)
+  } catch {
+    return trimmed.toLowerCase()
+  }
+
+  const hostname = parsed.hostname.toLowerCase()
+  const isYouTube = hostname === 'youtube.com' ||
+    hostname.endsWith('.youtube.com') ||
+    hostname === 'youtu.be'
+
+  if (isYouTube) {
+    let videoId: string | null = null
+    if (hostname === 'youtu.be') {
+      videoId = parsed.pathname.slice(1).split('/')[0] || null
+    } else if (parsed.pathname.startsWith('/shorts/')) {
+      videoId = parsed.pathname.split('/')[2] || null
+    } else if (parsed.pathname.startsWith('/embed/')) {
+      videoId = parsed.pathname.split('/')[2] || null
+    } else if (parsed.searchParams.has('v')) {
+      videoId = parsed.searchParams.get('v')
+    }
+
+    if (videoId && /^[\w-]{11}$/.test(videoId)) {
+      return `https://www.youtube.com/watch?v=${videoId}`
+    }
+  }
+
+  // Strip common tracking parameters
+  const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref', 'fbclid', 'gclid', 'si']
+  trackingParams.forEach(param => parsed.searchParams.delete(param))
+  parsed.searchParams.sort()
+
+  let pathname = parsed.pathname
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    pathname = pathname.slice(0, -1)
+  }
+  parsed.pathname = pathname
+
+  return parsed.toString()
+}
+
+export async function computeSourceHash(canonicalUrl: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(canonicalUrl)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 Deno.serve(async request => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors })
   try {
@@ -88,9 +141,28 @@ Deno.serve(async request => {
         if (duplicate) return response({ error: 'This source has already been imported as an episode.' }, 409)
       }
     }
+
+    const canonicalUrl = normalizeSourceUrl(sourceUrl, sourceType)
+    const sourceHash = await computeSourceHash(canonicalUrl)
+
+    // Deduplication check: return existing pending, processing, or completed job
+    const { data: existingJob, error: checkError } = await admin
+      .from('import_jobs')
+      .select('*')
+      .eq('source_hash', sourceHash)
+      .in('status', ['pending', 'processing', 'extracting', 'uploading', 'completed'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!checkError && existingJob) {
+      return response({ job: existingJob, reused: true, message: 'Existing import job reused.' }, 200)
+    }
+
     const { data, error } = await admin.from('import_jobs').insert({
       source_url: sourceUrl,
       source_type: sourceType,
+      source_hash: sourceHash,
       status: 'pending',
       created_by: user.id,
       metadata,

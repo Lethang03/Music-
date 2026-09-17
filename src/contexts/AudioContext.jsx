@@ -1,28 +1,100 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react'
 import { readStored, writeStored, mediaKey, mediaUrl, validUrl } from '../lib/storage'
 import { logPlaybackEvent } from '../lib/playbackDiagnostics'
+import { mediaProvider } from '../services/media'
+import { recordAudioRequest } from '../lib/audioNetworkLogger'
 
 const AudioCtx = createContext(null)
 const clampVolume = value => Number.isFinite(Number(value)) ? Math.max(0, Math.min(1, Number(value))) : 1
+const sessionState = value => {
+  try { if (navigator.mediaSession) navigator.mediaSession.playbackState = value } catch { /* Optional API. */ }
+}
+function safeSetPositionState(duration, position = 0, playbackRate = 1) {
+  if (!('mediaSession' in navigator) || typeof navigator.mediaSession?.setPositionState !== 'function') return
+  const d = Number(duration)
+  const pos = Math.max(0, Number(position) || 0)
+  if (!Number.isFinite(d) || d <= 0) return
+  if (!Number.isFinite(pos)) return
+  try {
+    navigator.mediaSession.setPositionState({
+      duration: d,
+      playbackRate: Math.max(0.1, Number(playbackRate) || 1),
+      position: Math.min(pos, d)
+    })
+  } catch {
+    /* Optional API on platforms where setPositionState is missing or throws */
+  }
+}
+const sessionMetadata = item => {
+  if (!navigator.mediaSession) return
+  const fields = { title: item?.title || '', artist: item?.artist || item?.author || '' }
+  const artwork = mediaProvider.getArtworkUrl(item?.image_url || item?.cover_url || item?.image)
+  try {
+    navigator.mediaSession.metadata = item ? new MediaMetadata({ ...fields, artwork: artwork ? [{ src: artwork }] : [] }) : null
+  } catch {
+    try { navigator.mediaSession.metadata = item ? new MediaMetadata(fields) : null } catch { /* Optional API. */ }
+  }
+  if (!item) sessionState('none')
+}
+export const EQ_PRESETS = {
+  Default: { bass: 0, mid: 0, treble: 0 },
+  'Bass Boost': { bass: 6, mid: 0, treble: -1 },
+  Vocal: { bass: -2, mid: 5, treble: 2 },
+  Acoustic: { bass: 2, mid: 1, treble: 3 },
+  Pop: { bass: 4, mid: 2, treble: 4 },
+  Rock: { bass: 5, mid: -1, treble: 4 },
+  Electronic: { bass: 7, mid: 1, treble: 6 },
+  Night: { bass: -4, mid: 1, treble: -5 }
+}
+
+const initialEq = () => {
+  const saved = readStored('v2_equalizer_settings', {})
+  const enabled = saved?.enabled === true
+  const preset = typeof saved?.preset === 'string' && (EQ_PRESETS[saved.preset] || saved.preset === 'Custom') ? saved.preset : 'Default'
+  const fallbackValues = EQ_PRESETS[preset] || EQ_PRESETS.Default
+  const values = {
+    bass: Number.isFinite(Number(saved?.values?.bass)) ? Math.max(-12, Math.min(12, Number(saved.values.bass))) : fallbackValues.bass,
+    mid: Number.isFinite(Number(saved?.values?.mid)) ? Math.max(-12, Math.min(12, Number(saved.values.mid))) : fallbackValues.mid,
+    treble: Number.isFinite(Number(saved?.values?.treble)) ? Math.max(-12, Math.min(12, Number(saved.values.treble))) : fallbackValues.treble
+  }
+  return { eqEnabled: enabled, eqPreset: preset, eqValues: values }
+}
+
 const initialPrefs = () => {
   const saved = readStored('v2_playback_preferences', {})
   return { volume: clampVolume(saved?.volume ?? readStored('v2_volume', 1)), shuffle: saved?.shuffle === true, repeat: ['none','one','all'].includes(saved?.repeat) ? saved.repeat : 'none', autoplay: saved?.autoplay !== false }
 }
 
+function getOrCreateAudioInstance(existing) {
+  if (existing) return existing
+  if (typeof window !== 'undefined' && window.__soundverse_audio_instance) {
+    return window.__soundverse_audio_instance
+  }
+  const audio = new Audio()
+  if (typeof window !== 'undefined') {
+    window.__soundverse_audio_instance = audio
+  }
+  return audio
+}
+
 // Commands synchronously update one model. Media events never depend on React render timing.
 export function AudioProvider({ children, storageKey = 'v2_player_state', onProgress, getResumeTime }) {
   const audioRef = useRef(null)
-  const [state, setState] = useState(() => ({ queue: [], index: 0, activeItem: null, isPlaying: false, currentTime: 0, duration: 0, error: '', ...initialPrefs() }))
+  const webAudioRef = useRef({ ctx: null, source: null, bass: null, mid: null, treble: null, initialized: false })
+  const [state, setState] = useState(() => ({ queue: [], index: 0, activeItem: null, isPlaying: false, currentTime: 0, duration: 0, error: '', ...initialPrefs(), ...initialEq() }))
   const model = useRef(state)
   const generation = useRef(0)
   const pendingSeek = useRef(0)
+  const retryCount = useRef(0)
   const visited = useRef(new Set())
   const callbacks = useRef({ onProgress, getResumeTime })
   callbacks.current = { onProgress, getResumeTime }
   const lastSaved = useRef(0)
   const cleared = useRef(false)
+  const stopping = useRef(false)
   const publish = useCallback(patch => {
     model.current = { ...model.current, ...patch }
+    if (Object.prototype.hasOwnProperty.call(patch, 'activeItem')) sessionMetadata(patch.activeItem)
     setState(model.current)
   }, [])
   const persist = useCallback(() => {
@@ -43,24 +115,100 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     if (s.activeItem) callbacks.current.onProgress?.(s.activeItem, audioRef.current?.currentTime || 0, audioRef.current?.duration || 0, done, elapsed)
   }, [])
   const diagnostic = useCallback((event, audio = audioRef.current, item = model.current.activeItem, detail = '') => logPlaybackEvent(event, audio, item, detail), [])
+  const applyEqGains = useCallback((values, enabled) => {
+    const { initialized, ctx, bass, mid, treble } = webAudioRef.current
+    if (!initialized || !ctx || !bass || !mid || !treble) return
+    const now = ctx.currentTime
+    const b = enabled ? Number(values?.bass ?? 0) : 0
+    const m = enabled ? Number(values?.mid ?? 0) : 0
+    const t = enabled ? Number(values?.treble ?? 0) : 0
+    try {
+      bass.gain.setValueAtTime(b, now)
+      mid.gain.setValueAtTime(m, now)
+      treble.gain.setValueAtTime(t, now)
+    } catch {
+      /* AudioContext may be transitioning */
+    }
+  }, [])
+  const initEqualizer = useCallback(() => {
+    if (webAudioRef.current.initialized) {
+      if (webAudioRef.current.ctx?.state === 'suspended') {
+        webAudioRef.current.ctx.resume().catch(() => {})
+      }
+      return true
+    }
+    const audio = audioRef.current
+    if (!audio) return false
+    const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null
+    if (!AudioContextClass) return false
+
+    try {
+      const ctx = new AudioContextClass()
+      const source = ctx.createMediaElementSource(audio)
+
+      const bass = ctx.createBiquadFilter()
+      bass.type = 'lowshelf'
+      bass.frequency.value = 120
+
+      const mid = ctx.createBiquadFilter()
+      mid.type = 'peaking'
+      mid.frequency.value = 1000
+      mid.Q.value = 1.0
+
+      const treble = ctx.createBiquadFilter()
+      treble.type = 'highshelf'
+      treble.frequency.value = 8000
+
+      source.connect(bass)
+      bass.connect(mid)
+      mid.connect(treble)
+      treble.connect(ctx.destination)
+
+      webAudioRef.current = { ctx, source, bass, mid, treble, initialized: true }
+
+      const s = model.current
+      applyEqGains(s.eqValues, s.eqEnabled)
+
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {})
+      }
+      return true
+    } catch (err) {
+      diagnostic('ERROR', audio, model.current.activeItem, `Web Audio EQ initialization failed: ${err?.message || err}`)
+      return false
+    }
+  }, [applyEqGains, diagnostic])
+  const loadRef = useRef(null)
   const safePlay = useCallback(async (reason = 'PLAY_REQUEST') => {
     const audio = audioRef.current
-    if (!audio?.src) return
+    if (!audio) return
+    if (!audio.src && model.current.activeItem) {
+      return loadRef.current?.(model.current.index, true, pendingSeek.current || model.current.currentTime, reason)
+    }
+    if (!audio.src) return
+    if (audio.preload !== 'metadata') audio.preload = 'metadata'
     const token = generation.current
+    const item = model.current.activeItem
     diagnostic(reason, audio)
     publish({ error: '' })
+    if (webAudioRef.current.initialized && webAudioRef.current.ctx?.state === 'suspended') {
+      webAudioRef.current.ctx.resume().catch(() => {})
+    } else if (model.current.eqEnabled && !webAudioRef.current.initialized) {
+      initEqualizer()
+    }
     try {
       await audio.play()
       if (token === generation.current) diagnostic('PLAY_SUCCESS', audio)
       return true
     } catch (error) {
-      diagnostic('PLAY_REJECTED', audio, model.current.activeItem, `${error?.name || 'Error'}: ${error?.message || ''}`)
+      diagnostic('PLAY_REJECTED', audio, item, error?.name || 'Error')
       if (token !== generation.current) return false
       const message = error?.name === 'NotAllowedError'
         ? 'Playback was blocked. Press Play to try again.'
         : error?.name === 'AbortError'
           ? 'Playback was interrupted while switching tracks. Press Play to try again.'
           : `Unable to play this audio: ${error?.message || 'unknown media error'}`
+      sessionState('paused')
       publish({ isPlaying: false, error: message })
       return false
     }
@@ -73,28 +221,88 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     if (item._playNext) publish({ queue: model.current.queue.map((entry, i) => i === index ? { ...entry, _playNext: false } : entry) })
     report()
     generation.current++
-    audio.pause()
-    publish({ index, activeItem: item, currentTime: 0, duration: 0, isPlaying: false, error: '' })
-    const url = mediaUrl(item)
+    const source = mediaUrl(item)
+    const url = item?.type === 'episode' || item?.podcast_id
+      ? mediaProvider.getPodcastAudioUrl(source)
+      : mediaProvider.getAudioUrl(source)
     if (!url || !validUrl(url)) {
       audio.removeAttribute('src'); audio.load()
+      pendingSeek.current = 0
+      publish({ index, activeItem: item, currentTime: 0, duration: 0, isPlaying: false })
+      sessionState('none')
       diagnostic('ERROR', audio, item, 'Item has no playable audio URL')
       publish({ error: 'This item has no playable audio URL. Choose another item.' })
       return
     }
     pendingSeek.current = Math.max(0, resume ?? callbacks.current.getResumeTime?.(item) ?? 0)
+
+    // Task 3: Fix duplicate audio request via mediaKey(activeTrack) === mediaKey(requestTrack)
+    const activeItem = model.current.activeItem
+    const isSameTrack = activeItem && mediaKey(activeItem) === mediaKey(item)
+    const cleanAudioSrc = (audio.src || '').split('?')[0]
+    const cleanUrl = url.split('?')[0]
+    const isSameUrl = cleanAudioSrc === cleanUrl || (audio.src && url && audio.src === new URL(url, window.location.href).href)
+
+    if ((isSameTrack || isSameUrl) && audio.src) {
+      if (resume !== undefined && Number.isFinite(resume) && audio.readyState >= 1) {
+        audio.currentTime = resume
+      }
+      publish({ index, activeItem: item, currentTime: audio.currentTime || 0, duration: audio.duration || Number(item.duration) || 0, error: '' })
+      sessionState(play ? 'playing' : 'paused')
+      if (play) {
+        audio.preload = 'metadata'
+        await safePlay('PLAY_REQUEST')
+      }
+      persist()
+      return
+    }
+
+    // Task 4: Queue restore - load metadata only, do not connect audio for unplayed track
+    if (!play && (!pendingSeek.current || pendingSeek.current <= 0)) {
+      audio.preload = 'none'
+      publish({
+        index,
+        activeItem: item,
+        currentTime: 0,
+        duration: Number(item.duration) || 0,
+        isPlaying: false,
+        error: ''
+      })
+      sessionState('paused')
+      persist()
+      return
+    }
+
+    if (!play) {
+      audio.preload = 'metadata'
+      audio.src = url
+      audio.load()
+      publish({ index, activeItem: item, currentTime: pendingSeek.current || 0, duration: Number(item.duration) || 0, isPlaying: false, error: '' })
+      sessionState('paused')
+      persist()
+      return
+    }
+
+    // Task 1 & 2: Explicit user play - preload metadata only, load stream on play
+    retryCount.current = 0
+    recordAudioRequest({ url, title: item.title, initiator: reason })
+    audio.preload = 'metadata'
     audio.src = url
     audio.load()
+    publish({ index, activeItem: item, currentTime: 0, duration: 0, isPlaying: false, error: '' })
+    // Preserve the session while buffering; play is issued before React renders.
+    sessionState('playing')
     diagnostic('SOURCE_CHANGED', audio, item, reason)
     if (play) await safePlay('PLAY_REQUEST')
     persist()
   }, [diagnostic, persist, publish, report, safePlay])
+  loadRef.current = load
   const handleNext = useCallback(async (auto = false) => {
     const s = model.current
     if (!s.queue.length) return
     diagnostic(auto ? 'ENDED' : 'MANUAL_NEXT')
     if (auto && s.repeat === 'one') { diagnostic('NEXT_SELECTED', audioRef.current, s.queue[s.index], 'repeat-one'); await load(s.index, true, 0, 'repeat-one'); return }
-    if (auto && !s.autoplay) { publish({ isPlaying: false }); persist(); return }
+    if (auto && !s.autoplay) { sessionState('paused'); publish({ isPlaying: false }); persist(); return }
     const priority = s.queue.findIndex((item, index) => index !== s.index && item._playNext)
     let next = priority >= 0 ? priority : s.index + 1
     if (priority < 0 && s.shuffle && s.queue.length > 1) {
@@ -108,22 +316,24 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     }
     if (next >= s.queue.length && s.repeat === 'all') next = 0
     if (next < s.queue.length) { diagnostic('NEXT_SELECTED', audioRef.current, s.queue[next], auto ? 'ended' : 'manual'); await load(next, true, 0, auto ? 'ended' : 'manual-next') }
-    else { audioRef.current?.pause(); publish({ isPlaying: false }); persist() }
+    else { audioRef.current?.pause(); sessionState('paused'); publish({ isPlaying: false }); persist() }
   }, [diagnostic, load, persist, publish])
-  const handlePrev = useCallback(() => {
+  const handlePrev = useCallback((play = false) => {
     const s = model.current
     if ((audioRef.current?.currentTime || 0) > 3 || s.index === 0) {
       if (audioRef.current) audioRef.current.currentTime = 0
+      pendingSeek.current = 0
       publish({ currentTime: 0 })
+      if (play === true) void safePlay('PLAY_REQUEST')
     } else load(s.index - 1, true, 0)
-  }, [load, publish])
+  }, [load, publish, safePlay])
   useEffect(() => {
     // Keep one media instance under the provider's ownership. Besides avoiding
     // a rendered element being replaced outside the player lifecycle, this is
     // the instance exposed by window.Audio in the Playwright media fixture.
-    const audio = audioRef.current || new Audio()
+    const audio = getOrCreateAudioInstance(audioRef.current)
     audioRef.current = audio
-    audio.preload = 'metadata'
+    audio.preload = 'none'
     audio.volume = clampVolume(model.current.volume)
     let lastTick = performance.now()
     const handlers = {
@@ -148,17 +358,27 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
         }
         pendingSeek.current = 0
         publish({ duration: Number.isFinite(audio.duration) ? audio.duration : 0, currentTime: audio.currentTime })
-        if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession && Number.isFinite(audio.duration) && audio.duration > 0) {
-          try { navigator.mediaSession.setPositionState({ duration: audio.duration, playbackRate: audio.playbackRate || 1, position: audio.currentTime }) } catch { /* Ignore */ }
-        }
+        safeSetPositionState(audio.duration, audio.currentTime, audio.playbackRate)
       },
       durationchange: () => publish({ duration: Number.isFinite(audio.duration) ? audio.duration : 0 }),
       canplay: () => diagnostic('CANPLAY', audio),
-      playing: () => { diagnostic('PLAYING', audio); lastTick = performance.now(); publish({ isPlaying: true, error: '' }); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; },
-      pause: () => { diagnostic('PAUSE', audio); publish({ isPlaying: false }); report(); persist(); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; },
+      playing: () => { if (audio.paused) return; diagnostic('PLAYING', audio); lastTick = performance.now(); publish({ isPlaying: true, error: '' }); sessionState('playing'); },
+      pause: () => {
+        if (!audio.paused) return
+        diagnostic('PAUSE', audio)
+        publish({ isPlaying: false })
+        report()
+        persist()
+        if (stopping.current) {
+          stopping.current = false
+          sessionState('none')
+        } else {
+          sessionState(model.current.activeItem ? 'paused' : 'none')
+        }
+      },
       waiting: () => diagnostic('WAITING', audio),
       stalled: () => diagnostic('STALLED', audio),
-      ended: () => { diagnostic('ENDED', audio); report(true); void handleNext(true); },
+      ended: () => { if (!audio.ended) return; diagnostic('ENDED', audio); report(true); void handleNext(true); },
       error: () => { diagnostic('ERROR', audio); publish({ isPlaying: false, error: 'Audio could not be loaded. Check your connection or choose another item.' }); if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none'; }
     }
     Object.entries(handlers).forEach(([event, handler]) => audio.addEventListener(event, handler))
@@ -203,26 +423,32 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
       document.removeEventListener('visibilitychange', visibility)
       window.removeEventListener('auth_signout', clearPlayer)
       window.removeEventListener('auth_cleared', clearPlayer)
-      hardStop()
-      // Keep the stopped instance for an effect restart (including StrictMode).
-      // All listeners and sources are cleared above; a real unmount releases
-      // the provider ref. Playback still has exactly one media owner.
+      // Keep instance intact across HMR and route changes
     }
   }, [storageKey, diagnostic, handleNext, load, persist, publish, report])
   const seek = useCallback(time => {
     const audio = audioRef.current
-    if (audio && Number.isFinite(time) && Number.isFinite(audio.duration)) {
-      audio.currentTime = Math.max(0, Math.min(time, audio.duration))
-      publish({ currentTime: audio.currentTime }); report(); persist()
-      if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
-        try { navigator.mediaSession.setPositionState({ duration: audio.duration, playbackRate: audio.playbackRate || 1, position: audio.currentTime }) } catch { /* Ignore */ }
+    if (audio && Number.isFinite(time)) {
+      pendingSeek.current = Math.max(0, time)
+      if (Number.isFinite(audio.duration) && audio.duration > 0 && audio.readyState >= 1) {
+        audio.currentTime = Math.max(0, Math.min(time, audio.duration))
       }
+      publish({ currentTime: time })
+      report()
+      persist()
+      safeSetPositionState(model.current.duration || audio.duration, time, audio.playbackRate)
     }
   }, [persist, publish, report])
   const togglePlay = useCallback(() => {
-    if (audioRef.current?.paused) void safePlay()
-    else audioRef.current?.pause()
-  }, [safePlay])
+    const audio = audioRef.current
+    if (!audio) return
+    if (!audio.src && model.current.activeItem) {
+      void load(model.current.index, true, pendingSeek.current || model.current.currentTime, 'play-deferred')
+      return
+    }
+    if (audio.paused) void safePlay('PLAY_REQUEST')
+    else audio.pause()
+  }, [load, safePlay])
   const playItem = useCallback((item, newQueue = null, index = 0, resume) => {
     if (!item) return
     const queue = newQueue?.length ? newQueue : [item]
@@ -279,36 +505,80 @@ export function AudioProvider({ children, storageKey = 'v2_player_state', onProg
     publish({ queue, index: Math.max(0, newIndex) })
     persist()
   }
-  useEffect(() => {
-    if (!navigator.mediaSession || !state.activeItem) return
-    const item = state.activeItem
-    const artwork = item.image_url || item.cover_url || item.image
-    try {
-      navigator.mediaSession.metadata = new MediaMetadata({ title: item.title || '', artist: item.artist || item.author || '', artwork: artwork ? [{ src: artwork }] : [] })
-    } catch { /* Invalid artwork must not interrupt playback. */ }
-
-    const updatePositionState = () => {
-      if ('setPositionState' in navigator.mediaSession && audioRef.current && Number.isFinite(audioRef.current.duration) && audioRef.current.duration > 0) {
-        try {
-          navigator.mediaSession.setPositionState({
-            duration: audioRef.current.duration,
-            playbackRate: audioRef.current.playbackRate || 1,
-            position: audioRef.current.currentTime || 0
-          })
-        } catch { /* Ignore */ }
-      }
+  const persistEq = useCallback((enabled, preset, values) => {
+    writeStored('v2_equalizer_settings', { enabled, preset, values })
+  }, [])
+  const setEqEnabled = useCallback(value => {
+    const next = typeof value === 'function' ? value(model.current.eqEnabled) : Boolean(value)
+    if (next && !webAudioRef.current.initialized) {
+      initEqualizer()
     }
-    updatePositionState()
-
-    const actions = { play: () => safePlay('PLAY_REQUEST'), pause: () => audioRef.current?.pause(), nexttrack: () => handleNext(false), previoustrack: handlePrev, seekto: d => seek(d.seekTime) }
+    publish({ eqEnabled: next })
+    applyEqGains(model.current.eqValues, next)
+    persistEq(next, model.current.eqPreset, model.current.eqValues)
+  }, [initEqualizer, applyEqGains, persistEq, publish])
+  const setEqPreset = useCallback(presetName => {
+    const presetValues = EQ_PRESETS[presetName]
+    if (!presetValues) return
+    if (!webAudioRef.current.initialized && model.current.eqEnabled) {
+      initEqualizer()
+    }
+    const nextValues = { ...presetValues }
+    publish({ eqPreset: presetName, eqValues: nextValues })
+    applyEqGains(nextValues, model.current.eqEnabled)
+    persistEq(model.current.eqEnabled, presetName, nextValues)
+  }, [initEqualizer, applyEqGains, persistEq, publish])
+  const setEqBand = useCallback((band, rawValue) => {
+    if (!['bass', 'mid', 'treble'].includes(band)) return
+    const val = Math.max(-12, Math.min(12, Math.round(Number(rawValue) || 0)))
+    const nextValues = { ...model.current.eqValues, [band]: val }
+    const matchedPreset = Object.entries(EQ_PRESETS).find(([_, p]) => p.bass === nextValues.bass && p.mid === nextValues.mid && p.treble === nextValues.treble)
+    const nextPreset = matchedPreset ? matchedPreset[0] : 'Custom'
+    if (!webAudioRef.current.initialized && model.current.eqEnabled) {
+      initEqualizer()
+    }
+    publish({ eqPreset: nextPreset, eqValues: nextValues })
+    applyEqGains(nextValues, model.current.eqEnabled)
+    persistEq(model.current.eqEnabled, nextPreset, nextValues)
+  }, [initEqualizer, applyEqGains, persistEq, publish])
+  const resetEq = useCallback(() => {
+    const flatValues = { ...EQ_PRESETS.Default }
+    if (!webAudioRef.current.initialized && model.current.eqEnabled) {
+      initEqualizer()
+    }
+    publish({ eqPreset: 'Default', eqValues: flatValues })
+    applyEqGains(flatValues, model.current.eqEnabled)
+    persistEq(model.current.eqEnabled, 'Default', flatValues)
+  }, [initEqualizer, applyEqGains, persistEq, publish])
+  useEffect(() => {
+    if (!navigator.mediaSession) return
+    // Handlers belong to the provider lifetime, not to a React track render.
+    const action = (name, command) => detail => {
+      diagnostic('MEDIA_SESSION', audioRef.current, model.current.activeItem, name)
+      return command(detail)
+    }
+    const actions = {
+      play: action('play', () => safePlay('PLAY_REQUEST')),
+      pause: action('pause', () => audioRef.current?.pause()),
+      stop: action('stop', () => {
+        stopping.current = true
+        audioRef.current?.pause()
+        sessionState('none')
+      }),
+      nexttrack: action('nexttrack', () => handleNext(false)),
+      previoustrack: action('previoustrack', () => handlePrev(true)),
+      seekto: action('seekto', d => seek(d.seekTime)),
+      seekforward: action('seekforward', d => seek((audioRef.current?.currentTime || 0) + (d.seekOffset ?? 10))),
+      seekbackward: action('seekbackward', d => seek((audioRef.current?.currentTime || 0) - (d.seekOffset ?? 10)))
+    }
     Object.entries(actions).forEach(([name, fn]) => { try { navigator.mediaSession.setActionHandler(name, fn) } catch { /* Platform-dependent action. */ } })
     return () => {
       Object.keys(actions).forEach(name => { try { navigator.mediaSession.setActionHandler(name, null) } catch { /* Platform-dependent action. */ } })
-      navigator.mediaSession.metadata = null
+      sessionMetadata(null)
     }
-  }, [state.activeItem, safePlay, handleNext, handlePrev, seek])
+  }, [diagnostic, safePlay, handleNext, handlePrev, seek])
   return (
-    <AudioCtx.Provider value={{ ...state, currentIndex: state.index, togglePlay, seek, setVolume, setShuffle, setRepeat, setAutoplay: value => setPreference('autoplay', value), toggleShuffle: () => setShuffle(s => !s), toggleRepeat: () => setRepeat(r => r === 'none' ? 'all' : r === 'all' ? 'one' : 'none'), handleNext, handlePrev, playItem, addToQueue, playNext: item => addToQueue(item, true), removeFromQueue, reorderQueue, setCurrentIndex: index => load(index, true, 0) }}>
+    <AudioCtx.Provider value={{ ...state, currentIndex: state.index, togglePlay, seek, setVolume, setShuffle, setRepeat, setAutoplay: value => setPreference('autoplay', value), toggleShuffle: () => setShuffle(s => !s), toggleRepeat: () => setRepeat(r => r === 'none' ? 'all' : r === 'all' ? 'one' : 'none'), handleNext, handlePrev, playItem, addToQueue, playNext: item => addToQueue(item, true), removeFromQueue, reorderQueue, setCurrentIndex: index => load(index, true, 0), eqEnabled: state.eqEnabled, eqPreset: state.eqPreset, eqValues: state.eqValues, setEqEnabled, setEqPreset, setEqBand, resetEq, eqPresets: EQ_PRESETS }}>
       {children}
     </AudioCtx.Provider>
   )

@@ -39,7 +39,8 @@ test('real FFmpeg: sequential tracks, duplicate/stale events, HTTP failure, stop
     createAudioResource, StreamType, AudioPlayerStatus, VoiceConnectionStatus, NoSubscriberBehavior,
     createAudioPlayer: () => player,
   } })
-  const { setupAudioPlayback } = await import('../discord-bot/audio.js')
+  const { setupAudioPlayback, audioCache } = await import('../discord-bot/audio.js')
+  await audioCache?.clear()
   const wav = Buffer.alloc(44 + 4800 * 2)
   wav.write('RIFF'); wav.writeUInt32LE(wav.length - 8, 4); wav.write('WAVEfmt ', 8)
   wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22)
@@ -57,6 +58,7 @@ test('real FFmpeg: sequential tracks, duplicate/stale events, HTTP failure, stop
     }
     assert.equal(plays, 3); assert.equal(starts, 3)
     fetchMock.mock.mockImplementation(async () => new Response(null, { status: 403 }))
+    await audioCache?.clear()
     const failure = await audio.play(source, connection)
     assert.equal(failure.status, 'failed'); assert.match(failure.message, /HTTP 403/)
     assert.ok(!failure.message.includes('DO_NOT_LOG'))
@@ -64,5 +66,5 @@ test('real FFmpeg: sequential tracks, duplicate/stale events, HTTP failure, stop
     audio.stop()
     assert.equal((await pending).status, 'stopped')
     assert.equal(plays, 3)
-  } finally { audio.stop(); mock.restoreAll() }
+  } finally { audio.stop(); await audioCache?.clear(); mock.restoreAll() }
 })

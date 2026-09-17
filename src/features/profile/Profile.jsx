@@ -24,7 +24,7 @@ export default function Profile() {
       setForm(null); setMessage('Profile saved')
     } catch (err) { setMessage(err.message) } finally { setBusy(false) }
   }
-  return <div className="v2-page">
+  return <div className="v2-page profile-page">
     {error && <button className="v2-btn-secondary" disabled={profileLoading} onClick={retryProfile}>{profileLoading ? 'Loading profile…' : 'Retry profile'}</button>}
     <header className="v2-profile-heading"><div className="v2-profile-picture">{profile?.avatar_url ? <img src={profile.avatar_url} alt="Your avatar" /> : (profile?.display_name || 'L')[0]}</div><div><small>LISTENER</small><h1>{profile?.display_name || 'Listener'}</h1><p>{session.user.email}</p>{profile?.username && <p>@{profile.username}</p>}<p>{profile?.bio}</p></div></header>
     {message && <p role="status" className="v2-status-banner">{message}</p>}

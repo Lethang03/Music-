@@ -1,3 +1,4 @@
+import { mediaProvider } from '../../../services/media'
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
 
@@ -80,7 +81,7 @@ export default function AdminOverview() {
             {stats.recentTracks.length === 0 && <p className="v2-admin-empty">No music yet.</p>}
             {stats.recentTracks.map(t => (
               <div key={t.id} className="v2-admin-list-item">
-                <img src={t.cover_url || ''} alt="" className="v2-admin-thumb" />
+                <img src={mediaProvider.getCoverUrl(t.cover_url || '')} alt="" className="v2-admin-thumb" loading="lazy" decoding="async" />
                 <div className="v2-admin-item-info">
                   <strong>{t.title}</strong>
                   <small>{t.artist}</small>
@@ -99,7 +100,7 @@ export default function AdminOverview() {
             {stats.recentPodcasts.length === 0 && <p className="v2-admin-empty">No podcasts yet.</p>}
             {stats.recentPodcasts.map(p => (
               <div key={p.id} className="v2-admin-list-item">
-                <img src={p.cover_url || ''} alt="" className="v2-admin-thumb" />
+                <img src={mediaProvider.getCoverUrl(p.cover_url || '')} alt="" className="v2-admin-thumb" loading="lazy" decoding="async" />
                 <div className="v2-admin-item-info">
                   <strong>{p.title}</strong>
                   <small>{p.author}</small>

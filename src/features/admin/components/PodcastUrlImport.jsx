@@ -1,3 +1,4 @@
+import { mediaProvider } from '../../../services/media'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { createImportJob, importAction } from '../../../lib/audioImport'
@@ -60,7 +61,7 @@ export default function PodcastUrlImport() {
       <header className="podcast-url-form-header"><h3>Import TikTok / YouTube Episode</h3><p>Import one authorized video into a published podcast.</p></header>
       <div className="v2-form-group"><div className="podcast-source-heading"><label htmlFor="podcast-source-url">Source URL</label>{detected && <span className="podcast-source-badge">{detected === 'youtube' ? 'YouTube' : 'TikTok'}</span>}</div><input id="podcast-source-url" type="url" required value={form.source_url} aria-invalid={Boolean(form.source_url && !detected)} aria-describedby="podcast-source-help podcast-source-error" onChange={e => { setForm({ ...form, source_url: e.target.value }); setError('') }}/><small id="podcast-source-help" className="podcast-import-hint">Paste an authorized TikTok or YouTube video URL.</small><small id="podcast-source-error" className="podcast-field-error">{form.source_url && !detected ? 'Invalid TikTok / YouTube URL. Use a public video or share link.' : ''}</small></div>
       <div className="v2-form-group"><label htmlFor="podcast-import-target">Podcast</label><select id="podcast-import-target" required disabled={!podcasts.length || busy} value={selectedPodcast ? form.podcast_id : ''} onChange={e => setForm({ ...form, podcast_id: e.target.value })}><option value="">Select podcast</option>{podcasts.map(p => <option key={p.id} value={p.id} disabled={!p.published}>{p.title}{p.published ? '' : ' (unpublished)'}</option>)}</select></div>
-      {selectedPodcast && <div className="podcast-selected-preview">{selectedPodcast.cover_url && <img src={selectedPodcast.cover_url} alt=""/>}<strong>{selectedPodcast.title}</strong></div>}
+      {selectedPodcast && <div className="podcast-selected-preview">{selectedPodcast.cover_url && <img src={mediaProvider.getCoverUrl(selectedPodcast.cover_url)} alt=""/>}<strong>{selectedPodcast.title}</strong></div>}
       {!podcasts.length && <div className="podcast-import-empty">{loading ? 'Loading published podcasts…' : <><strong>No published podcasts available.</strong>Create or publish a podcast first.</>}</div>}
       {field('title', 'Title (optional)')}
       <label className="v2-form-group">Description (optional)<textarea value={form.description} rows={3} onChange={e => setForm({ ...form, description: e.target.value })}/></label>

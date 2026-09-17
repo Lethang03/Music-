@@ -1,10 +1,11 @@
 import { createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, StreamType, VoiceConnectionStatus } from '@discordjs/voice'
 import { spawn } from 'node:child_process'
-import { Readable } from 'node:stream'
-import { pipeline } from 'node:stream/promises'
+import { createReadStream } from 'node:fs'
 import { access } from 'node:fs/promises'
+import { pipeline } from 'node:stream/promises'
 import ffmpegPath from 'ffmpeg-static'
 import { AudioTestError, safeTitle } from './music-source.js'
+import { audioCache } from './cache.js'
 
 export function setupAudioPlayback() {
   const player = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Stop } })
@@ -88,19 +89,27 @@ export function setupAudioPlayback() {
               if (!ffmpegPath) throw new AudioTestError('FFmpeg unavailable for this platform.')
               try { await access(ffmpegPath) } catch { throw new AudioTestError('FFmpeg unavailable: reinstall ffmpeg-static with its install script enabled.') }
               if (stopped) return
-              headerTimer = setTimeout(() => { fail('HTTP/network timeout while opening the audio source (20 seconds).') }, 20_000)
-              let response
-              try { response = await fetch(source.url, { signal: controller.signal }) }
-              catch { throw new AudioTestError('HTTP/network error while opening the audio source. Check connectivity, URL expiry, and access.') }
-              clearTimeout(headerTimer)
-              if (!response.ok) throw new AudioTestError(`Audio source inaccessible (HTTP ${response.status}). Check file access or URL expiry.`)
-              if (!response.body) throw new AudioTestError('Audio source returned an empty response body.')
-              if (/text\/html|application\/json/i.test(response.headers.get('content-type') || '')) throw new AudioTestError('Audio source returned HTML/JSON instead of an audio file.')
-              if (stopped || failed) { await response.body.cancel(); return }
+              // Check local cache before fetching from network
+              let cachedFilePath = await audioCache.get(source)
+              if (cachedFilePath) {
+                console.log(`[SOUNDVERSE] Cache HIT - ${title} | Streaming from local cache`)
+              } else {
+                console.log(`[SOUNDVERSE] Cache MISS - ${title} | Downloading once to local cache`)
+                headerTimer = setTimeout(() => { fail('HTTP/network timeout while opening the audio source (20 seconds).') }, 20_000)
+                try {
+                  cachedFilePath = await audioCache.downloadAndCache(source, controller.signal)
+                } finally {
+                  clearTimeout(headerTimer)
+                }
+                // Prune cache in background to prevent unlimited disk growth
+                audioCache.prune().catch(() => {})
+              }
+
+              if (stopped || failed) return
               if (connection.state.status !== VoiceConnectionStatus.Ready) throw new AudioTestError('Voice connection is no longer Ready.')
               subscription = connection.subscribe(player)
               if (!subscription) throw new AudioTestError('Voice connection could not subscribe to the AudioPlayer.')
-              // Fetch in Node: no sensitive URL in FFmpeg arguments or diagnostic output.
+              // Decode in Node: no sensitive URL in FFmpeg arguments or diagnostic output.
               decoder = spawn(ffmpegPath, ['-hide_banner', '-loglevel', 'error', '-nostdin', '-protocol_whitelist', 'pipe', '-i', 'pipe:0', '-map', '0:a:0', '-vn', '-c:a', 'libopus', '-ar', '48000', '-ac', '2', '-b:a', '128k', '-frame_duration', '20', '-f', 'ogg', 'pipe:1'], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] })
               decoder.on('error', () => fail('FFmpeg could not start. Check binary installation and process execution permissions.'))
               decoder.stderr.on('data', (data) => {
@@ -116,15 +125,17 @@ export function setupAudioPlayback() {
                 else finish()
               })
               startupTimer = setTimeout(() => fail('Audio did not start within 30 seconds. Source may be stalled or undecodable.'), 30_000)
-              input = Readable.fromWeb(response.body)
-              // Detect stalled downloads after playback has started as well.
+
+              // Stream directly from cached file via stream pipeline without loading into RAM
+              input = createReadStream(cachedFilePath)
+              // Detect stalled playback
               let stallTimer
               const resetStall = () => {
                 clearTimeout(stallTimer)
                 stallTimer = setTimeout(() => {
-                  // Pausing deliberately backpressures FFmpeg and the HTTP stream.
+                  // Pausing deliberately backpressures FFmpeg and the stream.
                   if (player.state.status === AudioPlayerStatus.Paused) resetStall()
-                  else fail('Audio download stalled for 30 seconds.')
+                  else fail('Audio streaming stalled for 30 seconds.')
                 }, 30_000)
               }
               input.on('data', resetStall)
@@ -132,7 +143,9 @@ export function setupAudioPlayback() {
               input.once('end', () => clearTimeout(stallTimer))
               resetStall()
               void pipeline(input, decoder.stdin).catch((error) => {
-                if (error.code !== 'EPIPE') fail('HTTP/network stream interrupted while downloading audio.')
+                if (error.code !== 'EPIPE' && error.code !== 'ERR_STREAM_PREMATURE_CLOSE') {
+                  fail('Audio stream interrupted while downloading or decoding.')
+                }
               })
               try { resource = createAudioResource(decoder.stdout, { inputType: StreamType.OggOpus }) }
               catch { throw new AudioTestError('AudioResource creation failed for the decoded Opus stream.') }
@@ -149,3 +162,5 @@ export function setupAudioPlayback() {
     resume() { return player.unpause() },
   }
 }
+
+export { audioCache }

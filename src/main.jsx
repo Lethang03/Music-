@@ -7,6 +7,7 @@ import { readStored } from './lib/storage'
 
 import './styles/variables.css'
 import './styles/main.css'
+import './styles/interface.css'
 
 document.documentElement.dataset.theme = readStored(
   'soundverse_theme',
@@ -71,20 +72,18 @@ async function prepareServiceWorker() {
     import.meta.env.PROD &&
     !isTestOrDevelopment
   ) {
-    window.addEventListener(
-      'load',
-      () => {
-        navigator.serviceWorker
-          .register('/sw.js')
-          .catch(error =>
-            console.warn(
-              'Offline support unavailable:',
-              error
-            )
+    const register = () => {
+      navigator.serviceWorker
+        .register('/sw.js', { updateViaCache: 'none' })
+        .catch(error =>
+          console.warn(
+            'Offline support unavailable:',
+            error
           )
-      },
-      { once: true }
-    )
+        )
+    }
+    if (document.readyState === 'complete') register()
+    else window.addEventListener('load', register, { once: true })
   }
 }
 

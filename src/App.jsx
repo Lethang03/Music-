@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { LibraryProvider, useLibrary } from './contexts/LibraryContext'
 import { AudioProvider } from './contexts/AudioContext'
 import AppShell from './components/layout/AppShell'
+import { ConnectivityProvider } from './contexts/ConnectivityContext'
 import AuthModal from './features/auth/AuthModal'
 import LandingPage from './features/landing/LandingPage'
 const HomePage = lazy(() => import('./features/home/HomePage'))
@@ -132,9 +133,9 @@ function AppContent() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
+      <ConnectivityProvider><AuthProvider>
         <AppContent />
-      </AuthProvider>
+      </AuthProvider></ConnectivityProvider>
     </ErrorBoundary>
   )
 }

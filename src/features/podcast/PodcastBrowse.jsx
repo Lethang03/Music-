@@ -1,17 +1,26 @@
+import { mediaProvider } from '../../services/media'
 import React, { useState } from 'react'
 import { Play, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useLibrary } from '../../contexts/LibraryContext'
 import TiltCard from '../../components/ui/TiltCard'
+import PodcastHero from './PodcastHero'
 
 const CATEGORY_FILTERS = ['Tất cả', 'Giáo dục', 'Tâm lý', 'Công nghệ', 'Kinh doanh', 'Đời sống', 'Sức khỏe']
 
 export default function PodcastBrowse() {
-  const { podcasts, loading } = useLibrary()
+  const { podcasts, episodes = [], loading } = useLibrary()
   const navigate = useNavigate()
-  const [activeFilter, setActiveFilter] = useState('All')
-  const categories = ['All', ...new Set(podcasts.map(p => p.category).filter(Boolean))]
-  const filtered = podcasts.filter(p => activeFilter === 'All' || p.category === activeFilter)
+  const [activeFilter, setActiveFilter] = useState('Tất cả')
+
+  // Merge default curated categories with any dynamic categories present in the database
+  const dynamicCategories = Array.from(new Set(podcasts.map(p => p.category).filter(Boolean)))
+  const categories = ['Tất cả', ...Array.from(new Set([...CATEGORY_FILTERS.slice(1), ...dynamicCategories]))]
+
+  const filtered = podcasts.filter(p => {
+    if (activeFilter === 'Tất cả' || activeFilter === 'All') return true
+    return p.category === activeFilter
+  })
 
   if (loading) return <div className="v2-page-loading">Loading Podcasts...</div>
 
@@ -23,11 +32,10 @@ export default function PodcastBrowse() {
 
   return (
     <div className="v2-page v2-animate-fade">
-      <header className="v2-page-hdr">
-        <h1>Khám phá Podcasts</h1>
-        <p>Những câu chuyện truyền cảm hứng, kiến thức và giải trí.</p>
-      </header>
+      {/* SoundVerse Cosmic Podcast Hero */}
+      <PodcastHero podcasts={podcasts} episodes={episodes} />
 
+      {/* Category Filter Row - Positioned Elegantly Below Hero */}
       <div className="v2-filter-row" role="tablist" aria-label="Category filter">
         {categories.map(f => (
           <button
@@ -42,22 +50,14 @@ export default function PodcastBrowse() {
         ))}
       </div>
 
-      {/* Hero Banner */}
-      <TiltCard className="v2-podcast-hero">
-        <div className="v2-podcast-hero-text">
-          <h2>Những câu chuyện làm bạn<br />lớn hơn mỗi ngày</h2>
-          <button className="v2-btn-primary" disabled={!filtered.length} onClick={() => handlePodcastClick(filtered[0])} style={{ width: 'max-content', marginTop: '8px' }}>
-            Khám phá ngay
-          </button>
+      {/* Podcast Catalog Section */}
+      <section id="podcast-catalog" className="v2-section">
+        <div className="v2-section-hdr">
+          <h2>{activeFilter === 'Tất cả' ? 'Khám phá Podcast' : `Chủ đề: ${activeFilter}`}</h2>
+          <span className="v2-ep-count">{filtered.length} kênh</span>
         </div>
-      </TiltCard>
 
-      {hasPodcasts ? (
-        <section className="v2-section">
-          <div className="v2-section-hdr">
-            <h2>Podcast nổi bật</h2>
-            <span className="v2-ep-count">{filtered.length} shows</span>
-          </div>
+        {hasPodcasts ? (
           <div className="v2-premium-grid">
             {filtered.map((pod) => (
               <TiltCard
@@ -71,12 +71,12 @@ export default function PodcastBrowse() {
               >
                 <div className="v2-card-artwork podcast-artwork">
                   <img
-                    src={pod.image || pod.cover_url}
+                    src={mediaProvider.getCoverUrl(pod.image || pod.cover_url)}
                     alt={pod.title}
                     loading="lazy"
+                    decoding="async"
                   />
                   <div className="v2-card-overlay">
-                    {/* This opens the detail page, not plays */}
                     <button className="v2-card-play-btn" tabIndex={-1} aria-label="Mở podcast">
                       <Play size={22} fill="currentColor" style={{ marginLeft: '2px' }} />
                     </button>
@@ -89,19 +89,17 @@ export default function PodcastBrowse() {
               </TiltCard>
             ))}
           </div>
-        </section>
-      ) : (
-        <div className="v2-podcast-empty">
-          <div className="v2-podcast-empty-icon">🎙️</div>
-          <h2>No podcasts yet</h2>
-          <p>Podcasts published by an admin will appear here.</p>
-        </div>
-      )}
+        ) : (
+          <div className="v2-podcast-empty">
+            <div className="v2-podcast-empty-icon">🎙️</div>
+            <h2>Chưa có podcast nào trong mục này</h2>
+            <p>Hãy chọn chủ đề khác hoặc quay lại mục Tất cả.</p>
+          </div>
+        )}
+      </section>
 
       <style>{`
         .v2-page { display: flex; flex-direction: column; gap: 32px; }
-        .v2-page-hdr h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
-        .v2-page-hdr p  { color: var(--text-secondary); font-size: 1rem; }
 
         .v2-filter-row {
           display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
@@ -111,35 +109,31 @@ export default function PodcastBrowse() {
         .v2-filter-pill {
           white-space: nowrap; padding: 10px 20px;
           border-radius: var(--radius-full);
-          background: transparent; border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255,255,255,0.1);
           color: var(--text-secondary); font-weight: 600; font-size: 0.875rem;
-          cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+          cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;
         }
-        .v2-filter-pill:hover { border-color: rgba(255,255,255,0.25); color: var(--text-primary); }
-        .v2-filter-pill.active { background: var(--accent-gradient); border-color: transparent; color: white; }
-
-        .v2-podcast-hero {
-          width: 100%; border-radius: 20px; overflow: hidden;
-          padding: 48px 48px;
-          background:
-            linear-gradient(90deg, rgba(11,11,30,0.9) 0%, rgba(11,11,30,0.6) 100%),
-            url('https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&q=80&w=1200') center/cover;
-          box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+        .v2-filter-pill:hover {
+          border-color: rgba(245, 158, 11, 0.4);
+          color: var(--text-primary);
+          background: rgba(255, 255, 255, 0.08);
         }
-        .v2-podcast-hero-text h2 {
-          font-size: clamp(1.5rem, 3vw, 2.25rem);
-          font-weight: 800; line-height: 1.2; letter-spacing: -0.02em;
-          margin-bottom: 16px;
+        .v2-filter-pill.active {
+          background: linear-gradient(135deg, #38bdf8 0%, #6366f1 50%, #f59e0b 100%);
+          border-color: transparent;
+          color: white;
+          box-shadow: 0 4px 16px rgba(56, 189, 248, 0.35);
         }
 
-        .v2-section { display: flex; flex-direction: column; gap: 20px; }
+        .v2-section { display: flex; flex-direction: column; gap: 20px; scroll-margin-top: 24px; }
         .v2-section-hdr { display: flex; align-items: center; justify-content: space-between; }
         .v2-section-hdr h2 { font-size: 1.375rem; font-weight: 800; }
         .v2-ep-count { font-size: 0.875rem; color: var(--text-tertiary); font-weight: 600; }
 
         .v2-podcast-empty {
           display: flex; flex-direction: column; align-items: center;
-          gap: 14px; min-height: 40vh; justify-content: center;
+          gap: 14px; min-height: 30vh; justify-content: center;
           text-align: center; color: var(--text-secondary);
         }
         .v2-podcast-empty-icon { font-size: 3.5rem; }
@@ -147,10 +141,6 @@ export default function PodcastBrowse() {
 
         /* Card hover cursor fix */
         .v2-premium-card { cursor: pointer; }
-
-        @media (max-width: 768px) {
-          .v2-podcast-hero { padding: 32px 24px; }
-        }
       `}</style>
     </div>
   )

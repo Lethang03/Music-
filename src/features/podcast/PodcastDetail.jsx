@@ -1,3 +1,4 @@
+import { mediaProvider } from '../../services/media'
 import React, { useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
@@ -140,7 +141,7 @@ export default function PodcastDetail() {
 
   if (!podcast) return null
 
-  const artworkUrl = podcast.image || podcast.cover_url
+  const artworkUrl = mediaProvider.getArtworkUrl(podcast.image || podcast.cover_url)
 
   return (
     <div className="v2-page v2-animate-fade">

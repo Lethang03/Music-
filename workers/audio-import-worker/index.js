@@ -6,11 +6,13 @@ import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
 import { randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
+import { createStorageProvider } from '../../src/services/storage/providerFactory.js'
 
 const supabaseUrl = process.env.SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!supabaseUrl || !serviceRoleKey) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.')
 const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
+const storageProvider = createStorageProvider(supabase, process.env.STORAGE_PROVIDER || process.env.VITE_STORAGE_PROVIDER)
 const pollMs = Number(process.env.IMPORT_POLL_MS || 3000)
 const maxBytes = Number(process.env.MAX_IMPORT_BYTES || 524288000)
 const audioExtensions = /\.(mp3|wav|m4a|aac|ogg|opus|flac|webm)$/i
@@ -53,7 +55,7 @@ async function processJob(job) {
     if (job.source_type === 'upload') {
       const match = /^storage:\/\/([^/]+)\/(.+)$/.exec(job.source_url)
       if (!match) throw new Error('Invalid staged upload URL.')
-      const { data, error } = await supabase.storage.from(match[1]).download(match[2])
+      const { data, error } = await storageProvider.downloadFile(match[1], match[2])
       if (error) throw new Error(`Staged upload is unavailable: ${error.message}`)
       input = join(folder, `source${extname(match[2]) || '.bin'}`); await fs.writeFile(input, Buffer.from(await data.arrayBuffer()))
     } else if (job.source_type === 'video') {
@@ -68,17 +70,17 @@ async function processJob(job) {
       input = join(folder, `source${suffix}`); await download(job.source_url, input)
     }
     log(job, 'converting mp3'); await update(job, { status: 'extracting', progress: 55 })
-    const output = join(folder, 'processed.mp3')
-    await execute('ffmpeg', ['-y', '-i', input, '-vn', '-codec:a', 'libmp3lame', '-b:a', '192k', '-ar', '44100', '-ac', '2', output], folder)
+    const bitrate = (job.podcast_id || job.source_type === 'podcast_episode_url') ? '112k' : '160k'
+    await execute('ffmpeg', ['-y', '-i', input, '-vn', '-codec:a', 'libmp3lame', '-b:a', bitrate, '-ar', '44100', '-ac', '2', output], folder)
     const probe = await execute('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'json', output], folder, true)
     const duration = Math.max(0, Math.round(Number(probe?.format?.duration || 0)))
     const title = info.title || basename(job.source_url).replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ') || 'Imported Track'
     const metadata = { ...job.metadata, ...info, title, artist: info.artist || info.uploader || job.metadata?.artist || 'Unknown Artist', duration }
     log(job, 'uploading audio'); await update(job, { status: 'uploading', progress: 70, metadata })
     const audioPath = `audio/imports/${job.id}-${safeName(title)}.mp3`
-    const { error: audioError } = await supabase.storage.from('soundverse').upload(audioPath, createReadStream(output), { contentType: 'audio/mpeg', upsert: false })
+    const { error: audioError } = await storageProvider.uploadFile('soundverse', audioPath, createReadStream(output), { contentType: 'audio/mpeg', cacheControl: '31536000, immutable', upsert: false })
     if (audioError) throw new Error(`Audio upload failed: ${audioError.message}`)
-    const audioUrl = supabase.storage.from('soundverse').getPublicUrl(audioPath).data.publicUrl
+    const audioUrl = storageProvider.getPublicUrl('soundverse', audioPath).data.publicUrl
     log(job, 'creating track'); await update(job, { status: 'uploading', progress: 90, metadata })
     const { data: track, error: trackError } = await supabase.from('music_tracks').insert({ title, artist: metadata.artist, album: metadata.album || null, genre: metadata.genre || null, cover_url: job.metadata?.cover_url || null, audio_url: audioUrl, duration, published: true, owner_id: job.created_by }).select().single()
     if (trackError) throw new Error(`Track creation failed: ${trackError.message}`)
